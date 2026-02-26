@@ -1,7 +1,7 @@
 import { Container } from "pixi.js";
 import type { Context, DefaultEvents, DefaultProvider } from "./Engine";
 
-export class Entity extends Container {
+export abstract class Entity extends Container {
   public id: string;
   public isReady: boolean;
 
@@ -12,16 +12,18 @@ export class Entity extends Container {
     this.isReady = false;
   }
 
-  init(context: Context<DefaultProvider, DefaultEvents>) {
+  public init(context: Context<DefaultProvider, DefaultEvents>) {
     if (this.isReady) return;
     this.onInit(context);
     this.isReady = true;
   }
 
-  update(_delta: number) {
+  public update(_delta: number) {
     this.onUpdate(_delta);
   }
 
-  protected onInit(context: Context<DefaultProvider, DefaultEvents>) {}
-  protected onUpdate(_delta: number) {}
+  protected abstract onInit(
+    context: Context<DefaultProvider, DefaultEvents>
+  ): void;
+  protected abstract onUpdate(_delta: number): void;
 }

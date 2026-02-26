@@ -1,4 +1,4 @@
-import { Assets, Graphics, type Renderer, Texture } from "pixi.js";
+import { Assets, Graphics, Rectangle, type Renderer, Texture } from "pixi.js";
 
 export class AssetManager {
   private cache = new Map<string, Texture>();
@@ -22,20 +22,21 @@ export class AssetManager {
 
   createTexture(
     key: string,
-    draw: (g: Graphics) => void,
+    draw: (g: Graphics) => Rectangle,
     options?: { resolution?: number }
   ): Texture {
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const graphics = new Graphics();
-    draw(graphics);
+    const frame = draw(graphics);
 
     const texture = this.renderer.generateTexture({
       target: graphics,
       resolution: options?.resolution ?? 1,
+      frame: frame,
     });
 
-    graphics.destroy();
+    graphics.destroy({ children: true });
 
     this.cache.set(key, texture);
     return texture;

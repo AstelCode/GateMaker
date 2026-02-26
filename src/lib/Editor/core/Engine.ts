@@ -30,7 +30,7 @@ export interface Context<
   root: Container;
 }
 
-export class Engine<
+export abstract class Engine<
   T extends DefaultProvider = DefaultProvider,
   U extends DefaultEvents = DefaultEvents // U ya contiene a resize e init
 > {
@@ -86,7 +86,7 @@ export class Engine<
   }
 
   private async iniApp() {
-    await this.app.init({ background: "#ffffff" });
+    await this.app.init({ background: "#ffffff", antialias: true });
     this.container.appendChild(this.app.canvas);
     this.app.stage.eventMode = "dynamic";
     this.app.stage.hitArea = this.app.screen;
@@ -130,10 +130,10 @@ export class Engine<
   }
   //#endregion
   //#region  internal methods
-  protected onInit() {}
-  protected onResize(width: number, height: number) {}
-  protected async onInitTextures() {}
-  protected onUpdate(delta: number) {}
-  protected onInitEvents() {}
+  protected abstract onInit(): void;
+  protected abstract onResize(width: number, height: number): void;
+  protected abstract onInitTextures(): Promise<void>;
+  protected abstract onUpdate(delta: number): void;
+  protected abstract onInitEvents(): void;
   //#endregion
 }

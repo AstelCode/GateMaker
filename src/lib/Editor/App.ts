@@ -1,25 +1,42 @@
 import { Engine, Log, MouseButton, MouseEventType } from "./core";
-import { Grid } from "./Grid";
+import { Grid } from "./entities/Grid";
+import { NodeEntity } from "./entities/NodeEntity";
 
 export class App extends Engine {
-  grid: Grid = new Grid(50);
+  grid: Grid = new Grid();
 
   override onInit(): void {
     this.grid.init(this.context);
+    this.grid.sprite.zIndex = -1;
     this.root.addChild(this.grid.getSprite());
+    this.world.addChild(new NodeEntity());
+    Log("APP", "initialize app");
+    this.setPos(250, 300);
+  }
+
+  private setDrag(dx: number, dy: number) {
+    this.grid.sprite.tilePosition.x += dx;
+    this.grid.sprite.tilePosition.y += dy;
+    this.world.position.x += dx;
+    this.world.position.y += dy;
+  }
+
+  private setPos(x: number, y: number) {
+    this.grid.sprite.tilePosition.x = x;
+    this.grid.sprite.tilePosition.y = y;
+    this.world.position.x = x;
+    this.world.position.y = y;
+  }
+
+  private setSacale(sx: number, sy: number) {}
+
+  protected onInitEvents(): void {
     this.mouse.on(MouseEventType.DOWN_ONCE, () => {
       console.log("on click");
     });
-    Log("APP", "initialize app");
-  }
-
-  protected onInitEvents(): void {
     this.mouse.on(MouseEventType.DRAG, (e) => {
       if (e.button !== MouseButton.MIDDLE) return;
-      this.grid.sprite.tilePosition.x += e.dx;
-      this.grid.sprite.tilePosition.y += e.dy;
-      this.world.position.x += e.dx;
-      this.world.position.y += e.dy;
+      this.setDrag(e.dx, e.dy);
     });
 
     this.mouse.on(MouseEventType.WHEEL, (e) => {
@@ -53,6 +70,16 @@ export class App extends Engine {
 
   protected async onInitTextures() {
     this.grid.createTexture(this.context);
+    this.assets.createTexture(NodeEntity.NAME, (g) =>
+      NodeEntity.createTexture(g)
+    );
     Log("APP", "loading textures");
+  }
+
+  protected onResize(width: number, height: number): void {
+    //throw new Error("Method not implemented.");
+  }
+  protected onUpdate(delta: number): void {
+    //throw new Error("Method not implemented.");
   }
 }
