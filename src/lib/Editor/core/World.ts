@@ -6,6 +6,7 @@ export class World extends Container {
   private context!: Context<any, any>;
   constructor() {
     super();
+    this.sortableChildren = true;
   }
 
   setContext(context: Context<any, any>) {
@@ -18,7 +19,6 @@ export class World extends Container {
     if (child instanceof Entity) {
       child.init(this.context);
     }
-
     return child;
   }
 

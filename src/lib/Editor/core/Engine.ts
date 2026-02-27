@@ -5,6 +5,8 @@ import { EventEmitter } from "./EventEmiter";
 import { AssetManager } from "./AssetManager";
 import type { Entity } from "./Entity";
 import { World } from "./World";
+import Stats from "stats.js";
+import { Log } from "./Log";
 
 export interface DefaultProvider {
   app: Application;
@@ -19,7 +21,7 @@ export interface DefaultEvents {
 
 export interface Context<
   Promider extends DefaultProvider,
-  Events extends DefaultEvents
+  Events extends DefaultEvents,
 > {
   app: Application;
   provider: Provider<Promider>;
@@ -30,9 +32,9 @@ export interface Context<
   root: Container;
 }
 
-export abstract class Engine<
+export class Engine<
   T extends DefaultProvider = DefaultProvider,
-  U extends DefaultEvents = DefaultEvents // U ya contiene a resize e init
+  U extends DefaultEvents = DefaultEvents, // U ya contiene a resize e init
 > {
   private container: HTMLElement;
   protected root!: Container;
@@ -43,9 +45,12 @@ export abstract class Engine<
   protected provider!: Provider<T>;
   protected events!: EventEmitter<U>;
   protected context!: Context<T, U>;
+  private stats: Stats;
 
   constructor(container: HTMLElement) {
     this.app = new Application();
+    this.stats = new Stats();
+    this.stats.showPanel(0);
     this.world = new World();
     this.container = container;
   }
@@ -65,33 +70,41 @@ export abstract class Engine<
       width,
       height,
     });
-    this.onResize(width, height);
+    this.onResize?.(width, height);
   };
 
   //#region  principal methods
   async init() {
     await this.iniApp();
     this.initProviders();
+    this.onCreate?.();
     this.mouse.initEvents();
-    await this.onInitTextures();
-    this.onInit();
+    await this.onInitTextures?.();
+    this.onInit?.();
     this.app.renderer.render(this.app.stage);
-    this.onInitEvents();
+    this.onInitEvents?.();
+    this.onRegisterContext?.();
     this.context.events.emit("init");
 
+    Log("APP", "initialize app");
     this.app.ticker.add((delta) => {
       this.world.update(delta.deltaTime);
-      this.onUpdate(delta.deltaTime);
+      this.onUpdate?.(delta.deltaTime);
     });
   }
 
   private async iniApp() {
     await this.app.init({ background: "#ffffff", antialias: true });
     this.container.appendChild(this.app.canvas);
+    this.container.appendChild(this.stats.dom);
     this.app.stage.eventMode = "dynamic";
     this.app.stage.hitArea = this.app.screen;
     this.app.stage.addChild(this.world);
-    this.mouse = new MouseController(this.app.stage, this.app.canvas);
+    this.mouse = new MouseController(
+      this.app.stage,
+      this.world,
+      this.app.canvas,
+    );
     this.assets = new AssetManager(this.app.renderer);
     this.provider = new Provider();
     this.events = new EventEmitter();
@@ -108,6 +121,10 @@ export abstract class Engine<
     this.world.setContext(this.context);
     this.resizeCallback();
     window.addEventListener("resize", this.resizeCallback);
+
+    this.app.ticker.add(() => {
+      this.stats.update();
+    });
   }
 
   private initProviders() {
@@ -117,6 +134,7 @@ export abstract class Engine<
   }
 
   destroy() {
+    this.container.removeChild(this.stats.dom);
     this.context.provider.clear();
     this.context.events.clear();
     window.removeEventListener("resize", this.resizeCallback);
@@ -130,10 +148,12 @@ export abstract class Engine<
   }
   //#endregion
   //#region  internal methods
-  protected abstract onInit(): void;
-  protected abstract onResize(width: number, height: number): void;
-  protected abstract onInitTextures(): Promise<void>;
-  protected abstract onUpdate(delta: number): void;
-  protected abstract onInitEvents(): void;
+  protected onInit?(): void;
+  protected onResize?(width: number, height: number): void;
+  protected onInitTextures?(): Promise<void>;
+  protected onUpdate?(delta: number): void;
+  protected onInitEvents?(): void;
+  protected onCreate?(): void;
+  protected onRegisterContext?(): void;
   //#endregion
 }

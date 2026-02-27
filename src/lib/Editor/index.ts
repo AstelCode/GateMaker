@@ -1,3 +1,4 @@
+import { Assets } from "pixi.js";
 import { App } from "./App";
 
 export interface AppInfo {
@@ -5,8 +6,11 @@ export interface AppInfo {
 }
 
 export async function createApp(container: HTMLElement): Promise<AppInfo> {
+  await document.fonts.load('10pt "CascadiaMono"');
+  await document.fonts.ready;
   const engine = new App(container);
   await engine.init();
+
   return { engine };
 }
 

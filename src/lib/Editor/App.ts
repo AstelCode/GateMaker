@@ -1,85 +1,103 @@
-import { Engine, Log, MouseButton, MouseEventType } from "./core";
+import { Point } from "pixi.js";
+import {
+  Engine,
+  Entity,
+  Log,
+  MouseButton,
+  MouseEventType,
+  type DefaultEvents,
+  type DefaultProvider,
+} from "./core";
 import { Grid } from "./entities/Grid";
 import { NodeEntity } from "./entities/NodeEntity";
+import { Wire } from "./entities/Wire";
+import { Camera } from "./Camera";
+import { Tools } from "./toolManager/Tools";
+import { CreateWireTool } from "./toolManager/tools/createWireTool";
 
-export class App extends Engine {
-  grid: Grid = new Grid();
+interface Providers {
+  camera: Camera;
+  grid: Grid;
+  tools: Tools;
+}
+interface Events {
+  restoreTool: any;
+}
+
+export type AppProviders = Providers & DefaultProvider;
+export type AppEvents = Events & DefaultEvents;
+
+export class App extends Engine<AppProviders, AppEvents> {
+  grid!: Grid;
+  camera!: Camera;
+  tools!: Tools;
 
   override onInit(): void {
     this.grid.init(this.context);
-    this.grid.sprite.zIndex = -1;
+    this.tools.init(this.context);
     this.root.addChild(this.grid.getSprite());
+    this.addComponents();
+    this.tools.register(new CreateWireTool());
+    this.camera.move(250, 300);
+    this.camera.scale(0.5, 0.5);
+  }
+
+  protected onCreate(): void {
+    this.grid = new Grid();
+    this.camera = new Camera(this.grid, this.world);
+    this.tools = new Tools();
+  }
+
+  protected onRegisterContext(): void {
+    this.context.provider.send("camera", () => this.camera);
+    this.context.provider.send("grid", () => this.grid);
+    this.context.provider.send("tools", () => this.tools);
+    this.context.events.on("restoreTool", () => this.tools.restore());
+  }
+
+  private addComponents() {
     this.world.addChild(new NodeEntity());
-    Log("APP", "initialize app");
-    this.setPos(250, 300);
+    const a = new NodeEntity();
+    a.position.x += 600;
+    this.world.addChild(a);
   }
 
-  private setDrag(dx: number, dy: number) {
-    this.grid.sprite.tilePosition.x += dx;
-    this.grid.sprite.tilePosition.y += dy;
-    this.world.position.x += dx;
-    this.world.position.y += dy;
+  protected hitTest(e: { x: number; y: number; wX: number; wY: number }) {
+    const children = this.world.children;
+    for (let i = children.length - 1; i >= 0; i--) {
+      const item = children[i];
+      if (item.getBounds().containsPoint(e.x, e.y)) {
+        return item;
+      }
+    }
+    return undefined;
   }
-
-  private setPos(x: number, y: number) {
-    this.grid.sprite.tilePosition.x = x;
-    this.grid.sprite.tilePosition.y = y;
-    this.world.position.x = x;
-    this.world.position.y = y;
-  }
-
-  private setSacale(sx: number, sy: number) {}
 
   protected onInitEvents(): void {
-    this.mouse.on(MouseEventType.DOWN_ONCE, () => {
-      console.log("on click");
+    this.mouse.on(MouseEventType.DOWN, (e) => {
+      const hit = this.hitTest(e);
+      this.tools.onDown(e, hit as Entity);
+      console.log(hit);
     });
+
+    this.mouse.on(MouseEventType.MOVE, (e) => {
+      this.tools.onMove(e);
+    });
+
     this.mouse.on(MouseEventType.DRAG, (e) => {
-      if (e.button !== MouseButton.MIDDLE) return;
-      this.setDrag(e.dx, e.dy);
+      if (this.camera.onDrag(e)) return;
+      this.tools.onDrag(e);
     });
 
-    this.mouse.on(MouseEventType.WHEEL, (e) => {
-      const scaleFactor = e.delta > 0 ? 0.9 : 1.1;
-
-      // Usamos las coordenadas globales de la pantalla del ratón
-      const mouseX = e.vX;
-      const mouseY = e.vY;
-
-      // 1. Aplicamos la fórmula al Mundo Físico
-      this.world.position.x =
-        mouseX - (mouseX - this.world.position.x) * scaleFactor;
-      this.world.position.y =
-        mouseY - (mouseY - this.world.position.y) * scaleFactor;
-
-      this.world.scale.x *= scaleFactor;
-      this.world.scale.y *= scaleFactor;
-
-      if (this.grid.sprite) {
-        this.grid.sprite.tilePosition.x =
-          mouseX - (mouseX - this.grid.sprite.tilePosition.x) * scaleFactor;
-        this.grid.sprite.tilePosition.y =
-          mouseY - (mouseY - this.grid.sprite.tilePosition.y) * scaleFactor;
-
-        // IMPORTANTE: Escalamos tileScale, NO el sprite
-        this.grid.sprite.tileScale.x *= scaleFactor;
-        this.grid.sprite.tileScale.y *= scaleFactor;
-      }
+    this.mouse.on(MouseEventType.UP, (e) => {
+      this.tools.onUp(e);
     });
+    this.mouse.on(MouseEventType.WHEEL, (e) => this.camera.onWheel(e));
   }
 
   protected async onInitTextures() {
     this.grid.createTexture(this.context);
-    this.assets.createTexture(NodeEntity.NAME, (g) =>
-      NodeEntity.createTexture(g)
-    );
+    this.assets.createTexture(NodeEntity.NAME, NodeEntity.createTexture());
     Log("APP", "loading textures");
-  }
-
-  protected onResize(width: number, height: number): void {
-    //throw new Error("Method not implemented.");
-  }
-  protected onUpdate(delta: number): void {
-    //throw new Error("Method not implemented.");
   }
 }

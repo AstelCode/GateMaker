@@ -1,4 +1,10 @@
-import { Assets, Graphics, Rectangle, type Renderer, Texture } from "pixi.js";
+import { Assets, Container, Rectangle, type Renderer, Texture } from "pixi.js";
+
+export interface TextureData {
+  container: Container;
+  frame: Rectangle;
+  resolution: number;
+}
 
 export class AssetManager {
   private cache = new Map<string, Texture>();
@@ -20,26 +26,14 @@ export class AssetManager {
     this.cache.set(key, texture);
   }
 
-  createTexture(
-    key: string,
-    draw: (g: Graphics) => Rectangle,
-    options?: { resolution?: number }
-  ): Texture {
-    if (this.cache.has(key)) return this.cache.get(key)!;
-
-    const graphics = new Graphics();
-    const frame = draw(graphics);
-
+  createTexture(key: string, data: TextureData) {
     const texture = this.renderer.generateTexture({
-      target: graphics,
-      resolution: options?.resolution ?? 1,
-      frame: frame,
+      target: data.container,
+      resolution: data.resolution,
+      frame: data.frame,
     });
-
-    graphics.destroy({ children: true });
-
+    data.container.destroy({ children: true });
     this.cache.set(key, texture);
-    return texture;
   }
 
   get(key: string): Texture {
