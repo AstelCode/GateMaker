@@ -98,6 +98,5 @@ export class App extends Engine<AppProviders, AppEvents> {
   protected async onInitTextures() {
     this.grid.createTexture(this.context);
     this.assets.createTexture(NodeEntity.NAME, NodeEntity.createTexture());
-    Log("APP", "loading textures");
   }
 }

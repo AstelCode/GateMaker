@@ -79,7 +79,6 @@ export class MouseController {
   }
 
   initEvents() {
-    Log("MouseController", "init events");
     this.canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
     });

@@ -75,22 +75,46 @@ export class Engine<
 
   //#region  principal methods
   async init() {
-    await this.iniApp();
-    this.initProviders();
-    this.onCreate?.();
-    this.mouse.initEvents();
-    await this.onInitTextures?.();
-    this.onInit?.();
-    this.app.renderer.render(this.app.stage);
-    this.onInitEvents?.();
-    this.onRegisterContext?.();
-    this.context.events.emit("init");
+    Log.info("APP", "Initializing application...");
 
-    Log("APP", "initialize app");
+    await this.iniApp();
+    Log.info("APP", "Core app created");
+
+    this.initProviders();
+    Log.info("APP", "Providers initialized");
+
+    this.onCreate?.();
+    Log.info("APP", "onCreate hook executed");
+
+    this.mouse.initEvents();
+    Log.info("APP", "Mouse controller connected");
+
+    await this.onInitTextures?.();
+    Log.info("APP", "Textures loaded");
+
+    this.onInit?.();
+    Log.info("APP", "onInit hook executed");
+
+    this.onInitComponents?.();
+    Log.info("APP", "Components initialized");
+
+    this.app.renderer.render(this.app.stage);
+    Log.info("APP", "First render complete");
+
+    this.onInitEvents?.();
+    Log.info("APP", "Event system initialized");
+
+    this.onRegisterContext?.();
+    Log.info("APP", "Context registered");
+
+    this.context.events.emit("init");
+    Log.info("APP", "Init event emitted");
     this.app.ticker.add((delta) => {
       this.world.update(delta.deltaTime);
       this.onUpdate?.(delta.deltaTime);
     });
+    Log.info("APP", "Game loop started");
+    Log.info("APP", "Application initialization complete ✅");
   }
 
   private async iniApp() {
@@ -148,12 +172,14 @@ export class Engine<
   }
   //#endregion
   //#region  internal methods
-  protected onInit?(): void;
-  protected onResize?(width: number, height: number): void;
-  protected onInitTextures?(): Promise<void>;
-  protected onUpdate?(delta: number): void;
-  protected onInitEvents?(): void;
   protected onCreate?(): void;
+  protected onInitTextures?(): Promise<void>;
   protected onRegisterContext?(): void;
+  protected onInitEvents?(): void;
+  protected onInitComponents?(): void;
+  protected onInit?(): void;
+
+  protected onResize?(width: number, height: number): void;
+  protected onUpdate?(delta: number): void;
   //#endregion
 }
