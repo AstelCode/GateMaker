@@ -12,10 +12,15 @@ export class Wire extends Entity {
   private g: Graphics;
   public startPoint: Point;
   public startNode!: NodeEntity;
+  public startPin!: string;
+
   public endPoint: Point;
   public endNode!: NodeEntity;
+  public endPin!: string;
+
   public path: Point[];
   public completed: boolean;
+
   constructor() {
     super();
     this.startPoint = new Point();
@@ -31,7 +36,8 @@ export class Wire extends Entity {
     this.drawCable();
   }
 
-  public startWire(p: Point, node: NodeEntity) {
+  public startWire(p: Point, node: NodeEntity, name: string) {
+    this.startPin = name;
     this.startPoint.x = p.x;
     this.startPoint.y = p.y;
     this.endPoint.x = p.x;
@@ -41,11 +47,14 @@ export class Wire extends Entity {
     this.startNode = node;
   }
 
-  public endWire(p: Point, node: NodeEntity) {
+  public endWire(p: Point, node: NodeEntity, name: string) {
+    this.endPin = name;
     this.endPoint.x = p.x;
     this.endPoint.y = p.y;
     this.endNode = node;
     this.completed = true;
+    this.endNode.setWirePos(this.endPin, this, this.endPoint);
+    this.startNode.setWirePos(this.startPin, this, this.startPoint);
     this.drawCable();
   }
 
@@ -56,7 +65,7 @@ export class Wire extends Entity {
   }
 
   public addPoint(p: Point) {
-    Grid.snap(p);
+    Grid.snapFloor(p);
     const cellSize = Grid.CELL_SIZE;
     p.x += cellSize / 2;
     p.y += cellSize / 2;
@@ -90,5 +99,51 @@ export class Wire extends Entity {
       cap: this.completed ? "square" : "round",
       join: "round",
     });
+  }
+
+  snapPos() {
+    this.pivot.set(0, 0);
+    const cs = Grid.CELL_SIZE;
+    for (let i = 1; i < this.path.length - 1; i++) {
+      const point = this.path[i];
+      point.x -= cs / 2;
+      point.y -= cs / 2;
+      Grid.snapRound(point);
+      point.x += cs / 2;
+      point.y += cs / 2;
+    }
+    this.drawCable();
+  }
+
+  public move(dx: number, dy: number) {
+    for (const point of this.path) {
+      point.x += dx;
+      point.y += dy;
+    }
+    this.drawCable();
+  }
+
+  public getSelectionBounds():
+    | { minX: number; minY: number; maxX: number; maxY: number }
+    | undefined {
+    if (this.path.length === 0) return undefined;
+
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+
+    for (const point of this.path) {
+      if (minX > point.x) minX = point.x;
+      if (minY > point.y) minY = point.y;
+      if (maxX < point.x) maxX = point.x;
+      if (maxY < point.y) maxY = point.y;
+    }
+    return {
+      minX: minX + this.position.x,
+      minY: minY + this.position.y,
+      maxX: maxX + this.position.x,
+      maxY: maxY + this.position.y,
+    };
   }
 }

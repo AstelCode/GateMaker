@@ -1,5 +1,4 @@
 import { Container, Point, Rectangle } from "pixi.js";
-import { Log } from "../Log";
 
 export type EngineMouseEvent = {
   x: number;
@@ -8,6 +7,8 @@ export type EngineMouseEvent = {
   wY: number;
   dx: number;
   dy: number;
+  wDx: number;
+  wDy: number;
   button: number;
   delta: number;
   target: Container;
@@ -19,6 +20,7 @@ export enum MouseEventType {
   UP,
   DRAG,
   WHEEL,
+  OUTSIDE,
 }
 
 export type MouseEventFunc = (e: EngineMouseEvent) => void;
@@ -40,7 +42,7 @@ export class MouseController {
   private isDragging = false;
 
   private lastMouse: Point | null = null;
-  private dragStart: Point | null = null;
+  private lastMouseWorld: Point | null = null;
   private root: Container;
   private world: Container;
   private canvas: HTMLCanvasElement;
@@ -72,6 +74,8 @@ export class MouseController {
       wY: worldPos.y,
       dx: 0,
       dy: 0,
+      wDx: 0,
+      wDy: 0,
       button: e.buttons,
       delta,
       target: e.target,
@@ -86,31 +90,36 @@ export class MouseController {
       this.isDragging = true;
       const e = this.getEventData(_e);
       this.lastMouse = new Point(e.x, e.y);
-      this.dragStart = new Point(e.x, e.y);
+      this.lastMouseWorld = new Point(e.wX, e.wY);
       this.emit(MouseEventType.DOWN, e);
     });
     this.root.on("pointerup", (_e) => {
       const e = this.getEventData(_e);
       this.isDragging = false;
       this.lastMouse = null;
-      this.dragStart = null;
+      this.lastMouseWorld = null;
       this.emit(MouseEventType.UP, e);
     });
 
     this.root.on("pointermove", (_e) => {
       const e = this.getEventData(_e);
-      if (this.isDragging && this.lastMouse && this.dragStart) {
+      if (this.isDragging && this.lastMouse && this.lastMouseWorld) {
         const dx = e.x - this.lastMouse.x;
         const dy = e.y - this.lastMouse.y;
-        this.emit(MouseEventType.DRAG, { ...e, dx, dy });
+        const wDx = e.wX - this.lastMouseWorld.x;
+        const wDy = e.wY - this.lastMouseWorld.y;
+        this.emit(MouseEventType.DRAG, { ...e, dx, dy, wDx, wDy });
         this.lastMouse.set(e.x, e.y);
+        this.lastMouseWorld.set(e.wX, e.wY);
       } else {
         this.emit(MouseEventType.MOVE, e);
       }
     });
 
-    this.root.on("pointerupoutside", () => {
+    this.root.on("pointerupoutside", (_e) => {
       this.isDragging = false;
+      const e = this.getEventData(_e);
+      this.emit(MouseEventType.OUTSIDE, e);
     });
 
     this.root.on("wheel", (_e) => {

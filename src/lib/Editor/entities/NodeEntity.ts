@@ -1,4 +1,4 @@
-import { Container, Graphics, Point, Rectangle, Sprite, Text } from "pixi.js";
+import { Container, Graphics, Point, Rectangle, Sprite } from "pixi.js";
 import {
   Entity,
   type Context,
@@ -8,7 +8,7 @@ import {
 } from "../core";
 import { Grid } from "./Grid";
 import { createText } from "../utils";
-//export type NodeDirection = "left" | "top" | "right" | "bottom";
+import type { Wire } from "./Wire";
 
 export enum ConnectorDirection {
   LEFT = 1 << 0,
@@ -178,6 +178,8 @@ export class NodeEntity extends Entity {
   name: string = "";
   sprite!: Sprite;
   config: NodeConfig;
+
+  protected wires: Record<string, { wire: Wire; pos: Point }[]> = {};
   constructor() {
     super();
     this.config = NodeEntity.CONFIG!;
@@ -188,8 +190,9 @@ export class NodeEntity extends Entity {
     const { rowSpan, colSpan } = this.config!;
     const { cw, tolerance, margin, ch } = NodeEntity.DESIGN;
     const cs = Grid.CELL_SIZE;
-    const centerX = this.position.x;
-    const centerY = this.position.y;
+    const centerX = this.position.x - this.pivot.x;
+    const centerY = this.position.y - this.pivot.y;
+
     const dx = p.x - centerX;
     const dy = p.y - centerY;
     const absDx = Math.abs(dx);
@@ -251,15 +254,111 @@ export class NodeEntity extends Entity {
     return undefined;
   }
 
+  public getConnectorPos(name: string) {
+    const { rowSpan, colSpan } = this.config!;
+    const { margin, ch } = NodeEntity.DESIGN;
+    const centerX = this.position.x - this.pivot.x;
+    const centerY = this.position.y - this.pivot.y;
+    const { direction, idx } = this.config.connectors[name];
+    const { RIGHT, LEFT, TOP, BOTTOM } = ConnectorDirection;
+    const cs = Grid.CELL_SIZE;
+
+    const halfW = (colSpan * cs) / 2;
+    const halfH = (rowSpan * cs) / 2;
+    let cx = centerX;
+    let cy = centerY;
+    if (direction === TOP) {
+      cy -= halfH + margin - ch / 2 + 2;
+      cx = centerX - halfW + idx * cs + cs / 2;
+    } else if (direction === BOTTOM) {
+      cy += halfH + margin - ch / 2 + 2;
+      cx = centerX - halfW + idx * cs + cs / 2;
+    } else if (direction === LEFT) {
+      cx -= halfW + margin - ch / 2 + 2;
+      cy = centerY - halfH + idx * cs + cs / 2;
+    } else if (direction === RIGHT) {
+      cx += halfW + margin - ch / 2 + 2;
+      cy = centerY - halfH + idx * cs + cs / 2;
+    }
+    return { x: cx, y: cy };
+  }
+
+  public getSelectionBounds() {
+    const cs = Grid.CELL_SIZE;
+    const { margin } = NodeEntity.DESIGN;
+    const halfW = (this.config.colSpan * cs) / 2;
+    const halfH = (this.config.rowSpan * cs) / 2;
+
+    return {
+      minX: this.position.x - halfW - margin - this.pivot.x,
+      minY: this.position.y - halfH - margin - this.pivot.y,
+      maxX: this.position.x + halfW + margin - this.pivot.x,
+      maxY: this.position.y + halfH + margin - this.pivot.y,
+    };
+  }
+
+  public setWirePos(name: string, wire: Wire, pos: Point) {
+    this.wires[name] ??= [];
+    this.wires[name].push({ wire, pos });
+  }
+
+  public getConnectedWires() {
+    const wires: Wire[] = [];
+    for (const item in this.wires) {
+      wires.push(...this.wires[item].map((item) => item.wire));
+    }
+    return wires;
+  }
+
+  public getNextNodes() {
+    const connectors = Object.entries(this.config.connectors);
+    const nodes: NodeEntity[] = [];
+    for (let i = 0; i < connectors.length; i++) {
+      const [name, { type }] = connectors[i];
+      if (
+        type == ConnectorType.OUTPUT &&
+        this.wires[name] &&
+        this.wires[name].length > 0
+      ) {
+        this.wires[name].forEach((item) => {
+          if (item.wire.startNode == this) {
+            nodes.push(item.wire.endNode);
+          } else {
+            nodes.push(item.wire.startNode);
+          }
+        });
+      }
+    }
+    return nodes;
+  }
+  public isValidConnector(name: string) {
+    if (!this.wires[name]) return true;
+    return this.wires[name].length == 0;
+  }
+
   protected onInit(context: Context<DefaultProvider, DefaultEvents>): void {
     this.sprite = new Sprite(context.assets.get("AND"));
     this.sprite.anchor.set(0.5);
-    this.pivot.set(0.5);
-
     const cs = Grid.CELL_SIZE;
-    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
-    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
+    this.pivot.set(
+      this.config.colSpan % 2 == 1 ? cs / 2 : 0,
+      this.config.rowSpan % 2 == 1 ? cs / 2 : 0,
+    );
 
     this.addChild(this.sprite);
+  }
+
+  updateWires() {
+    for (const name in this.wires) {
+      const pos = this.getConnectorPos(name);
+      this.wires[name].forEach((item) => {
+        item.pos.x = pos.x;
+        item.pos.y = pos.y;
+      });
+    }
+  }
+
+  snapPos() {
+    Grid.snapRound(this.position);
   }
 }

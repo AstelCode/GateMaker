@@ -14,6 +14,7 @@ import { Wire } from "./entities/Wire";
 import { Camera } from "./Camera";
 import { Tools } from "./toolManager/Tools";
 import { CreateWireTool } from "./toolManager/tools/createWireTool";
+import { SelectionTool } from "./toolManager/tools/SelectionTool";
 
 interface Providers {
   camera: Camera;
@@ -36,8 +37,11 @@ export class App extends Engine<AppProviders, AppEvents> {
     this.grid.init(this.context);
     this.tools.init(this.context);
     this.root.addChild(this.grid.getSprite());
-    this.addComponents();
+
+    ///! the order of the tools is important
     this.tools.register(new CreateWireTool());
+    this.tools.register(new SelectionTool());
+
     this.camera.move(250, 300);
     this.camera.scale(0.5, 0.5);
   }
@@ -55,7 +59,7 @@ export class App extends Engine<AppProviders, AppEvents> {
     this.context.events.on("restoreTool", () => this.tools.restore());
   }
 
-  private addComponents() {
+  protected onInitComponents(): void {
     this.world.addChild(new NodeEntity());
     const a = new NodeEntity();
     a.position.x += 600;
@@ -77,7 +81,6 @@ export class App extends Engine<AppProviders, AppEvents> {
     this.mouse.on(MouseEventType.DOWN, (e) => {
       const hit = this.hitTest(e);
       this.tools.onDown(e, hit as Entity);
-      console.log(hit);
     });
 
     this.mouse.on(MouseEventType.MOVE, (e) => {
@@ -93,6 +96,7 @@ export class App extends Engine<AppProviders, AppEvents> {
       this.tools.onUp(e);
     });
     this.mouse.on(MouseEventType.WHEEL, (e) => this.camera.onWheel(e));
+    this.mouse.on(MouseEventType.OUTSIDE, (e) => this.tools.onOutside(e));
   }
 
   protected async onInitTextures() {

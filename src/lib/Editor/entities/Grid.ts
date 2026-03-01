@@ -48,12 +48,29 @@ export class Grid {
     return this.sprite;
   }
 
-  static snap(p: Point) {
+  static snapRound(p: { x: number; y: number }) {
     const s = this.CELL_SIZE;
     const inv = 1 / s;
-    const gx = fastFloor(p.x * inv);
-    const gy = fastFloor(p.y * inv);
-    p.x = gx * s;
-    p.y = gy * s;
+    p.x = Math.round(p.x * inv) * s;
+    p.y = Math.round(p.y * inv) * s;
+  }
+
+  static snapRoundValue(x: number) {
+    const s = this.CELL_SIZE;
+    const inv = 1 / s;
+    return Math.round(x * inv) * s;
+  }
+
+  static snapFloor(p: { x: number; y: number }) {
+    const s = this.CELL_SIZE;
+    const inv = 1 / s;
+    p.x = fastFloor(p.x * inv) * s;
+    p.y = fastFloor(p.y * inv) * s;
+  }
+
+  static snapFloorValue(x: number) {
+    const s = this.CELL_SIZE;
+    const inv = 1 / s;
+    return fastFloor(x * inv) * s;
   }
 }

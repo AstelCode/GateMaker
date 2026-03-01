@@ -10,15 +10,11 @@ import { NodeEntity } from "../../entities/NodeEntity";
 import type { Tool } from "../Tools";
 import { Wire } from "../../entities/Wire";
 export class CreateWireTool implements Tool {
-  lock: boolean = true;
   keep: boolean = false;
   name: string = "create-wire";
+  priority: number = 5;
   context!: Context<AppProviders, AppEvents>;
   current?: Wire;
-
-  init(context: Context<AppProviders, AppEvents>): void {
-    this.context = context;
-  }
 
   IsValid(e: EngineMouseEvent, hit: Entity): boolean {
     if (!(hit instanceof NodeEntity)) return false;
@@ -35,11 +31,11 @@ export class CreateWireTool implements Tool {
           const p = new Point(result.x, result.y);
           if (!this.current) {
             this.current = new Wire();
-            this.current.startWire(p, hit);
+            this.current.startWire(p, hit, result.name!);
             this.context.world.addChild(this.current);
           } else {
             if (this.current.startNode.id != hit.id) {
-              this.current.endWire(p, hit);
+              this.current.endWire(p, hit, result.name!);
               this.current = undefined;
               this.context.events.emit("restoreTool");
             }
@@ -52,6 +48,7 @@ export class CreateWireTool implements Tool {
     if (e.button == MouseButton.RIGHT) {
       if (this.current) {
         this.context.world.removeChild(this.current);
+        this.current.destroy(true);
         delete this.current;
         this.current = undefined;
         this.context.events.emit("restoreTool");
