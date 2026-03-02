@@ -1,14 +1,9 @@
 import { Container, Graphics, Point, Rectangle, Sprite } from "pixi.js";
-import {
-  Entity,
-  type Context,
-  type DefaultEvents,
-  type DefaultProvider,
-  type TextureData,
-} from "../core";
+import { Entity, type Context, type TextureData } from "../core";
 import { Grid } from "./Grid";
-import { createText } from "../utils";
+import { createText } from "../provitional/utils";
 import type { Wire } from "./Wire";
+import type { AppEvents, AppProviders } from "../provitional/App";
 
 export enum ConnectorDirection {
   LEFT = 1 << 0,
@@ -90,6 +85,7 @@ export class NodeEntity extends Entity {
   };
 
   static createTexture(): TextureData {
+    // ... [Se mantiene exactamente igual tu código de createTexture]
     const container = new Container();
     const g = new Graphics();
     container.addChild(g);
@@ -150,7 +146,6 @@ export class NodeEntity extends Entity {
           if (dir & LEFT) label.x += labelOffset + ch / 2;
           if (dir & RIGHT) label.x -= labelOffset - ch / 2;
         }
-
         container.addChild(label);
       }
 
@@ -171,7 +166,6 @@ export class NodeEntity extends Entity {
     }
 
     const frame = new Rectangle(-w / 2, -h / 2, w, h);
-
     return { container, frame, resolution: 3 };
   }
 
@@ -179,13 +173,20 @@ export class NodeEntity extends Entity {
   sprite!: Sprite;
   config: NodeConfig;
 
+  public _cells: number[] = [];
+  public _lastCol?: number;
+  public _lastRow?: number;
+  private context!: Context<AppProviders, AppEvents>;
+
   protected wires: Record<string, { wire: Wire; pos: Point }[]> = {};
+
   constructor() {
     super();
     this.config = NodeEntity.CONFIG!;
     this.zIndex = 2;
   }
 
+  // ... [getConnectorPos, getSelectionBounds, testHit se mantienen igual] ...
   public testHit(p: Point) {
     const { rowSpan, colSpan } = this.config!;
     const { cw, tolerance, margin, ch } = NodeEntity.DESIGN;
@@ -257,8 +258,8 @@ export class NodeEntity extends Entity {
   public getConnectorPos(name: string) {
     const { rowSpan, colSpan } = this.config!;
     const { margin, ch } = NodeEntity.DESIGN;
-    const centerX = this.position.x - this.pivot.x;
-    const centerY = this.position.y - this.pivot.y;
+    const centerX = this.position.x;
+    const centerY = this.position.y;
     const { direction, idx } = this.config.connectors[name];
     const { RIGHT, LEFT, TOP, BOTTOM } = ConnectorDirection;
     const cs = Grid.CELL_SIZE;
@@ -290,16 +291,32 @@ export class NodeEntity extends Entity {
     const halfH = (this.config.rowSpan * cs) / 2;
 
     return {
-      minX: this.position.x - halfW - margin - this.pivot.x,
-      minY: this.position.y - halfH - margin - this.pivot.y,
-      maxX: this.position.x + halfW + margin - this.pivot.x,
-      maxY: this.position.y + halfH + margin - this.pivot.y,
+      minX: this.position.x - halfW - margin,
+      minY: this.position.y - halfH - margin,
+      maxX: this.position.x + halfW + margin,
+      maxY: this.position.y + halfH + margin,
     };
   }
 
   public setWirePos(name: string, wire: Wire, pos: Point) {
     this.wires[name] ??= [];
     this.wires[name].push({ wire, pos });
+  }
+
+  public deleteWire(pinName: string) {
+    delete this.wires[pinName];
+  }
+
+  // --- NUEVO: Desregistra el nodo del Grid antes de eliminar ---
+  public delete() {
+    const connectedWires = this.getConnectedWires();
+    for (const wire of connectedWires) {
+      wire.delete();
+    }
+    const grid = this.context.provider.get("grid") as Grid;
+    if (grid) grid.unregisterEntity(this);
+
+    this.parent?.removeChild(this);
   }
 
   public getConnectedWires() {
@@ -321,31 +338,37 @@ export class NodeEntity extends Entity {
         this.wires[name].length > 0
       ) {
         this.wires[name].forEach((item) => {
-          if (item.wire.startNode == this) {
-            nodes.push(item.wire.endNode);
-          } else {
-            nodes.push(item.wire.startNode);
-          }
+          if (item.wire.startNode == this) nodes.push(item.wire.endNode);
+          else nodes.push(item.wire.startNode);
         });
       }
     }
     return nodes;
   }
+
   public isValidConnector(name: string) {
     if (!this.wires[name]) return true;
     return this.wires[name].length == 0;
   }
 
-  protected onInit(context: Context<DefaultProvider, DefaultEvents>): void {
+  // --- NUEVO: Guardamos el contexto y registramos el nodo en el Grid ---
+  protected onInit(context: Context<AppProviders, AppEvents>): void {
+    this.context = context;
     this.sprite = new Sprite(context.assets.get("AND"));
     this.sprite.anchor.set(0.5);
     const cs = Grid.CELL_SIZE;
-    this.pivot.set(
-      this.config.colSpan % 2 == 1 ? cs / 2 : 0,
-      this.config.rowSpan % 2 == 1 ? cs / 2 : 0,
-    );
+    //this.pivot.set(
+    //  this.config.colSpan % 2 == 1 ? cs / 2 : 0,
+    //  this.config.rowSpan % 2 == 1 ? cs / 2 : 0,
+    //);
+    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
+    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
 
     this.addChild(this.sprite);
+
+    // Registrar la posición inicial en el Grid
+    const grid = this.context.provider.get("grid")!;
+    if (grid) grid.registerEntity(this);
   }
 
   updateWires() {
@@ -354,11 +377,17 @@ export class NodeEntity extends Entity {
       this.wires[name].forEach((item) => {
         item.pos.x = pos.x;
         item.pos.y = pos.y;
+        item.wire.draw(); // Solo dibujamos mientras arrastramos
       });
     }
   }
 
   snapPos() {
+    const cs = Grid.CELL_SIZE;
     Grid.snapRound(this.position);
+    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
+    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
+    const grid = this.context.provider.get("grid") as Grid;
+    if (grid) grid.registerEntity(this);
   }
 }

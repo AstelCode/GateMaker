@@ -1,6 +1,6 @@
 import type { Container } from "pixi.js";
-import type { Grid } from "./entities/Grid";
-import { MouseButton, type EngineMouseEvent } from "./core";
+import type { Grid } from "../entities/Grid";
+import { MouseButton, type EngineMouseEvent } from "../../core";
 
 export class Camera {
   constructor(

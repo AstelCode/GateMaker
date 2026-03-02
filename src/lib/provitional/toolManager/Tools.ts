@@ -1,5 +1,5 @@
 import type { AppEvents, AppProviders } from "../App";
-import type { Context, EngineMouseEvent, Entity } from "../core";
+import type { Context, EngineMouseEvent, Entity } from "../../../core";
 
 export interface Tool {
   name: string;

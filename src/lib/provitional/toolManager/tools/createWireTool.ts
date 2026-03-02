@@ -5,10 +5,10 @@ import {
   type Context,
   type EngineMouseEvent,
   type Entity,
-} from "../../core";
-import { NodeEntity } from "../../entities/NodeEntity";
+} from "../../../../core";
+import { NodeEntity } from "../../../entities/NodeEntity";
 import type { Tool } from "../Tools";
-import { Wire } from "../../entities/Wire";
+import { Wire } from "../../../entities/Wire";
 export class CreateWireTool implements Tool {
   keep: boolean = false;
   name: string = "create-wire";
@@ -35,6 +35,7 @@ export class CreateWireTool implements Tool {
             this.context.world.addChild(this.current);
           } else {
             if (this.current.startNode.id != hit.id) {
+              this.current.recalc();
               this.current.endWire(p, hit, result.name!);
               this.current = undefined;
               this.context.events.emit("restoreTool");

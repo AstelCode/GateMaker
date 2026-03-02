@@ -95,6 +95,9 @@ export class Engine<
     this.onInit?.();
     Log.info("APP", "onInit hook executed");
 
+    this.onRegisterContext?.();
+    Log.info("APP", "Context registered");
+
     this.onInitComponents?.();
     Log.info("APP", "Components initialized");
 
@@ -103,9 +106,6 @@ export class Engine<
 
     this.onInitEvents?.();
     Log.info("APP", "Event system initialized");
-
-    this.onRegisterContext?.();
-    Log.info("APP", "Context registered");
 
     this.context.events.emit("init");
     Log.info("APP", "Init event emitted");

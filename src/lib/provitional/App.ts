@@ -7,10 +7,10 @@ import {
   MouseEventType,
   type DefaultEvents,
   type DefaultProvider,
-} from "./core";
-import { Grid } from "./entities/Grid";
-import { NodeEntity } from "./entities/NodeEntity";
-import { Wire } from "./entities/Wire";
+} from "../../core";
+import { Grid } from "../entities/Grid";
+import { NodeEntity } from "../entities/NodeEntity";
+import { Wire } from "../entities/Wire";
 import { Camera } from "./Camera";
 import { Tools } from "./toolManager/Tools";
 import { CreateWireTool } from "./toolManager/tools/createWireTool";

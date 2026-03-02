@@ -23,7 +23,7 @@ export class Entity extends Container {
     this.onUpdate?.(_delta);
   }
 
-  protected onInit?(context: Context<DefaultProvider, DefaultEvents>): void;
+  protected onInit?(context: Context<any, any>): void;
   protected onUpdate?(_delta: number): void;
   public getSelectionBounds(): BoundingBox | undefined {
     return undefined;
