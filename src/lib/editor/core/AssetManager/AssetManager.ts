@@ -4,6 +4,7 @@ export interface TextureData {
   container: Container;
   frame: Rectangle;
   resolution: number;
+  name: string;
 }
 
 export class AssetManager {
@@ -26,14 +27,14 @@ export class AssetManager {
     this.cache.set(key, texture);
   }
 
-  createTexture(key: string, data: TextureData) {
+  createTexture(data: TextureData) {
     const texture = this.renderer.generateTexture({
       target: data.container,
       resolution: data.resolution,
       frame: data.frame,
     });
     data.container.destroy({ children: true });
-    this.cache.set(key, texture);
+    this.cache.set(data.name, texture);
   }
 
   get(key: string): Texture {

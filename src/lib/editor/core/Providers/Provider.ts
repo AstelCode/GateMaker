@@ -7,7 +7,7 @@ export class Provider<RequestMap = any> {
 
   public send<K extends keyof RequestMap>(
     name: K,
-    provider: ProviderFunc<RequestMap[K]>,
+    provider: ProviderFunc<RequestMap[K]>
   ): () => void {
     this.providers.set(name, provider);
 

@@ -74,13 +74,13 @@ export class Entity extends Container {
       if (!this.bounding) {
         this.bounding = AABB.merge(
           this.children.filter((c): c is Entity => c instanceof Entity),
-          (item) => item.bounding,
+          (item) => item.bounding
         );
       } else {
         AABB.merge(
           this.children.filter((c): c is Entity => c instanceof Entity),
           (item) => item.bounding,
-          this.bounding,
+          this.bounding
         );
       }
     }

@@ -1,3 +1,4 @@
+import type { AABB } from "../AABB/AABB";
 import type { Vector } from "../math/Vector";
 import type { Collider } from "./ICollider";
 
@@ -5,7 +6,7 @@ export function pointInsideLine(
   a: Vector,
   b: Vector,
   p: Vector,
-  height: number,
+  height: number
 ) {
   const r = height * 0.5;
   const r2 = r * r;
@@ -36,11 +37,11 @@ export function pointInsidePath(p: Vector, path: Vector[], height: number) {
   return false;
 }
 
-export class LineCollider implements Collider {
-  constructor(
-    public path: Vector[] = [],
-    public height: number,
-  ) {}
+export class PathCollider implements Collider {
+  constructor(public path: Vector[] = [], public height: number) {}
+  getAABB(bounding?: AABB): AABB {
+    throw new Error("Method not implemented.");
+  }
 
   //draw(ctx: CanvasRenderingContext2D): void {
   //  ctx.save();

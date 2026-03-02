@@ -1,10 +1,10 @@
 import { Application, Container, Rectangle } from "pixi.js";
 import { MouseController } from "./controllers/MouseController";
 import { EventEmitter } from "./EventEmiter/EventEmitter";
-import type { AssetManager } from "./AssetManager/AssetManager";
+import { AssetManager, type TextureData } from "./AssetManager/AssetManager";
 import { World } from "./World";
 import { Provider } from "./Providers/Provider";
-
+import Stats from "stats.js";
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DefaultProvider {}
 
@@ -13,10 +13,11 @@ export interface DefaultEvents {
   resize: { width: number; height: number };
 }
 
-export interface EngineContext<
+export type EngineContext<
   IProvider extends DefaultProvider,
   IEvents extends DefaultEvents,
-> {
+  IContext extends {} = {}
+> = {
   providers: Provider<IProvider>;
   events: EventEmitter<IEvents>;
   assets: AssetManager;
@@ -24,11 +25,15 @@ export interface EngineContext<
   mouse: MouseController;
   world: World;
   root: Container;
+} & IContext;
+
+export interface LoadTexturesConstructor {
+  loadTextures(): TextureData[];
 }
 
 export class Engine<
   T extends DefaultProvider = DefaultProvider,
-  U extends DefaultEvents = DefaultEvents,
+  U extends DefaultEvents = DefaultEvents
 > {
   private container!: HTMLElement;
   private stats!: Stats;
@@ -43,6 +48,10 @@ export class Engine<
   protected mouse!: MouseController;
 
   protected assets!: AssetManager;
+
+  static loadTextures(): TextureData[] {
+    return [];
+  }
 
   constructor(container: HTMLElement) {
     this.app = new Application();
@@ -68,7 +77,6 @@ export class Engine<
   private async createApp() {
     await this.app.init({ background: "#ffffff", antialias: true });
     this.container.appendChild(this.app.canvas);
-
     this.app.stage.eventMode = "dynamic";
     this.app.stage.hitArea = this.app.screen;
 
@@ -78,6 +86,7 @@ export class Engine<
     this.mouse = new MouseController(this.root, this.world, this.app.canvas);
     this.events = new EventEmitter();
     this.providers = new Provider();
+    this.assets = new AssetManager(this.app.renderer);
     this.mouse.init();
 
     this.world.context = this.createContext();
