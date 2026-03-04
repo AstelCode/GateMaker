@@ -1,4 +1,4 @@
-import { App } from "./src/App";
+import { App } from "./App";
 
 export interface AppInfo {
   engine: App;

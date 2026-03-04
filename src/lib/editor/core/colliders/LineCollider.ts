@@ -1,4 +1,4 @@
-import type { AABB } from "../AABB/AABB";
+import { AABB } from "../AABB/AABB";
 import type { Vector } from "../math/Vector";
 import type { Collider } from "./ICollider";
 
@@ -6,7 +6,7 @@ export function pointInsideLine(
   a: Vector,
   b: Vector,
   p: Vector,
-  height: number
+  height: number,
 ) {
   const r = height * 0.5;
   const r2 = r * r;
@@ -38,31 +38,39 @@ export function pointInsidePath(p: Vector, path: Vector[], height: number) {
 }
 
 export class PathCollider implements Collider {
-  constructor(public path: Vector[] = [], public height: number) {}
-  getAABB(bounding?: AABB): AABB {
-    throw new Error("Method not implemented.");
-  }
+  constructor(
+    public path: Vector[] = [],
+    public height: number,
+  ) {}
 
-  //draw(ctx: CanvasRenderingContext2D): void {
-  //  ctx.save();
-  //  ctx.beginPath();
-  //  ctx.lineWidth = this.height;
-  //  for (let i = 0; i < this.path.length; i++) {
-  //    const p = this.path[i];
-  //    if (i === 0) ctx.moveTo(p.x, p.y);
-  //    else ctx.lineTo(p.x, p.y);
-  //  }
-  //  ctx.strokeStyle = "green";
-  //  ctx.stroke();
-  //  ctx.restore();
-  //}
+  getAABB(bounding?: AABB): AABB {
+    if (!bounding) bounding = new AABB();
+
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    let minX = Infinity;
+    let minY = Infinity;
+
+    for (let i = 0; i < this.path.length; i++) {
+      const p = this.path[i];
+      if (maxX < p.x) maxX = p.x;
+      if (maxY < p.y) maxY = p.y;
+      if (minX > p.x) minX = p.x;
+      if (minY > p.y) minY = p.y;
+    }
+    const pad = this.height / 2;
+    bounding.width = maxX - minX + pad * 2;
+    bounding.height = maxY - minY + pad * 2;
+    bounding.center.set((maxX + minX) / 2, (maxY + minY) / 2);
+    return bounding;
+  }
 
   updateData(path: Vector[], height?: number) {
     this.path = path;
     if (height) this.height = height;
   }
 
-  pointInsideBox(pos: Vector): boolean {
+  pointInside(pos: Vector): boolean {
     return pointInsidePath(pos, this.path, this.height);
   }
 }

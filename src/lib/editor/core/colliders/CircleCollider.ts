@@ -7,10 +7,11 @@ export function pointInsideCircle(center: Vector, p: Vector, radius: number) {
 }
 
 export class CircleCollider implements Collider {
-  constructor(public radius: number, public center: Vector) {}
-  pointInsideBox(pos: Vector): boolean {
-    throw new Error("Method not implemented.");
-  }
+  constructor(
+    public radius: number,
+    public center: Vector,
+  ) {}
+
   getAABB(bounding?: AABB): AABB {
     throw new Error("Method not implemented.");
   }

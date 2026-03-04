@@ -27,21 +27,11 @@ export class BoxCollider implements Collider {
     this.halfH = height / 2;
   }
 
-  getAABB(): AABB {
-    return new AABB(this.width, this.height);
+  getAABB(bounding?: AABB): AABB {
+    if (!bounding) bounding = new AABB();
+    bounding.set(this.width, this.height, this.center);
+    return bounding;
   }
-
-  /* draw(ctx: CanvasRenderingContext2D): void {
-    ctx.save();
-    ctx.strokeStyle = "green";
-    ctx.strokeRect(
-      this.center.x - this.halfW,
-      this.center.y - this.halfH,
-      this.width,
-      this.height,
-    );
-    ctx.restore();
-  } */
 
   set(width: number, height: number, pos: Vector, angle: number = 0) {
     this.width = width;
@@ -52,7 +42,7 @@ export class BoxCollider implements Collider {
     this.halfH = height / 2;
   }
 
-  pointInsideBox(p: Vector): boolean {
+  pointInside(p: Vector): boolean {
     return pointInsideBox(this.center, p, this.halfW, this.halfH, this.angle);
   }
 }

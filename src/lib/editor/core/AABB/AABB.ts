@@ -4,17 +4,17 @@ export class AABB {
   constructor(
     public width: number = 0,
     public height: number = 0,
-    public pos: Vector = new Vector(),
+    public center: Vector = new Vector(),
   ) {}
 
   set(width: number, height: number, pos: VectorData) {
     this.width = width;
     this.height = height;
-    this.pos.set(pos);
+    this.center.set(pos);
   }
 
   setFromAABB(a: AABB) {
-    this.set(a.width, a.height, a.pos);
+    this.set(a.width, a.height, a.center);
   }
 
   addPadding(padding: number) {
@@ -23,16 +23,16 @@ export class AABB {
   }
 
   get left() {
-    return this.pos.x - this.width / 2;
+    return this.center.x - this.width / 2;
   }
   get right() {
-    return this.pos.x + this.width / 2;
+    return this.center.x + this.width / 2;
   }
   get top() {
-    return this.pos.y - this.height / 2;
+    return this.center.y - this.height / 2;
   }
   get bottom() {
-    return this.pos.y + this.height / 2;
+    return this.center.y + this.height / 2;
   }
 
   setFromTwoPoints(a: VectorData, b: VectorData) {
@@ -42,7 +42,7 @@ export class AABB {
     const h = Math.abs(a.y - b.y);
     this.width = w;
     this.height = h;
-    this.pos.set(cX, cY);
+    this.center.set(cX, cY);
   }
 
   pointInside(pos: VectorData): boolean {
@@ -68,11 +68,25 @@ export class AABB {
   }
 
   static collideAABB(a: AABB, b: AABB): boolean {
+    if (a.width == 0 && a.height == 0) return false;
+    if (b.width == 0 && b.height == 0) return false;
     return !(
       a.right < b.left ||
       a.left > b.right ||
       a.bottom < b.top ||
       a.top > b.bottom
+    );
+  }
+
+  static containsAABB(a: AABB, b: AABB): boolean {
+    if (a.width === 0 || a.height === 0) return false;
+    if (b.width === 0 || b.height === 0) return false;
+
+    return (
+      b.left >= a.left &&
+      b.right <= a.right &&
+      b.top >= a.top &&
+      b.bottom <= a.bottom
     );
   }
 

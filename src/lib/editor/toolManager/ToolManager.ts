@@ -1,11 +1,11 @@
-import type { AppEvents, AppProviders } from "../App";
-import type { Context, EngineMouseEvent, Entity } from "../../../core";
+import type { AppContext, AppEvents, AppProviders } from "../App";
+import type { EngineContext, EngineMouseEvent, Entity } from "../core";
 
 export interface Tool {
   name: string;
   priority: number;
   keep?: boolean;
-  context: Context<AppProviders, AppEvents>;
+  context: EngineContext<AppProviders, AppEvents, AppContext>;
   IsValid(e: EngineMouseEvent, hit?: Entity): boolean;
   IsUnlock(e: EngineMouseEvent, hit?: Entity): boolean;
   init?(): void;
@@ -17,19 +17,15 @@ export interface Tool {
   onWheel?(e: EngineMouseEvent): void;
   onOutside?(e: EngineMouseEvent): void;
   reset?(): void;
+  destroy?(): void;
 }
-
-export class Tools {
-  public context!: Context<AppProviders, AppEvents>;
+export class ToolManager {
+  public context!: EngineContext<AppProviders, AppEvents, AppContext>;
   private registry = new Map<string, Tool>();
   private sorted: Tool[] = [];
-  private stack: Tool[] = [];
+  current: Tool | null = null;
 
-  get current(): Tool | null {
-    return this.stack[this.stack.length - 1] ?? null;
-  }
-
-  init(context: Context<any, any>) {
+  init(context: EngineContext<AppProviders, AppEvents, AppContext>) {
     this.context = context;
   }
 
@@ -44,18 +40,16 @@ export class Tools {
 
   activate(tool: Tool) {
     tool.load?.();
-    this.stack.push(tool);
+    this.current = tool;
   }
 
   restore() {
-    const tool = this.stack.pop();
-    tool?.reset?.();
+    this.current?.reset?.();
+    this.current = null;
   }
 
   tryActivate(e: EngineMouseEvent, hit?: Entity) {
     if (this.current) return;
-
-    console.log(this.sorted);
     for (const tool of this.sorted) {
       if (tool.IsValid(e, hit)) {
         this.activate(tool);
@@ -92,5 +86,11 @@ export class Tools {
 
   onOutside(e: EngineMouseEvent) {
     this.current?.onOutside?.(e);
+  }
+
+  destroy() {
+    for (const [_, tool] of this.registry.entries()) {
+      tool.destroy?.();
+    }
   }
 }

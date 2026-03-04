@@ -1,22 +1,30 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { Container } from "pixi.js";
-import type { EngineContext } from "./Engine";
+import type { DefaultEvents, DefaultProvider, EngineContext } from "./Engine";
 import { AABB } from "./AABB/AABB";
 import { uuid } from "./utils/uuid";
 import type { Collider } from "./colliders/ICollider";
 import type { Vector } from "./math/Vector";
+import { Transform } from "./math/Transform";
 
-export class Entity extends Container {
+export class Entity<
+  T extends DefaultProvider = DefaultProvider,
+  U extends DefaultEvents = DefaultEvents,
+  Z extends {} = {},
+> extends Container {
   public id: string;
   protected dirtyLayout: boolean;
-  public context!: EngineContext<any, any>;
+  public context!: EngineContext<T, U, Z>;
   public collider?: Collider;
   public bounding?: AABB;
+  //public transform!: Transform;
 
   constructor() {
     super();
     this.id = uuid();
     this.eventMode = "none";
     this.dirtyLayout = true;
+    // this.transform = new Transform();
   }
 
   public update(_delta: number) {
@@ -59,8 +67,15 @@ export class Entity extends Container {
   public forceLayoutUpdate() {
     this.updateCollider?.();
     this.updateBounding();
+    //this.syncTrasnform();
     this.onDirty?.();
   }
+
+  //public syncTrasnform() {
+  //  this.position.set(this.transform.position.x, this.transform.position.y);
+  //  this.scale.set(this.transform.scale.x, this.transform.scale.y);
+  //  this.rotation = this.transform.rotation;
+  //}
 
   public updateBounding() {
     if (this.collider) {
@@ -74,13 +89,13 @@ export class Entity extends Container {
       if (!this.bounding) {
         this.bounding = AABB.merge(
           this.children.filter((c): c is Entity => c instanceof Entity),
-          (item) => item.bounding
+          (item) => item.bounding,
         );
       } else {
         AABB.merge(
           this.children.filter((c): c is Entity => c instanceof Entity),
           (item) => item.bounding,
-          this.bounding
+          this.bounding,
         );
       }
     }

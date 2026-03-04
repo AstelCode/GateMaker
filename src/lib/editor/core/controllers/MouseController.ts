@@ -53,6 +53,8 @@ export class MouseController {
   private world: Container;
   private canvas: HTMLCanvasElement;
 
+  private button!: MouseButton;
+
   constructor(root: Container, world: Container, canvas: HTMLCanvasElement) {
     this.root = root;
     this.world = world;
@@ -90,6 +92,7 @@ export class MouseController {
       const e = this.getEventData(_e);
       this.lastMouse = new Point(e.vX, e.vY);
       this.lastMouseWorld = new Point(e.wX, e.wY);
+      this.button = e.button;
       this.emit(MouseEventType.DOWN, e);
     });
 
@@ -98,7 +101,7 @@ export class MouseController {
       this.isDragging = false;
       this.lastMouse = null;
       this.lastMouseWorld = null;
-      this.emit(MouseEventType.UP, e);
+      this.emit(MouseEventType.UP, { ...e, button: this.button });
     });
 
     this.root.on("pointermove", (_e) => {

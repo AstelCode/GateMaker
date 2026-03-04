@@ -1,0 +1,425 @@
+import { Container, Graphics, Rectangle, Sprite } from "pixi.js";
+import {
+  BoxCollider,
+  createText,
+  Entity,
+  Vector,
+  type EngineContext,
+  type TextureGenerator,
+} from "../core";
+import { Grid } from "../Grid";
+import type { AppContext, AppEvents, AppProviders } from "../App";
+import type { Wire } from "./Wire";
+
+export enum ConnectorDirection {
+  LEFT = 1 << 0,
+  RIGHT = 1 << 1,
+  TOP = 1 << 2,
+  BOTTOM = 1 << 3,
+  VERTICAL = 12,
+  HORIZONTAL = 3,
+}
+
+export enum ConnectorType {
+  INPUT,
+  OUTPUT,
+}
+
+export type Connector = {
+  idx: number;
+  direction: ConnectorDirection;
+  type: ConnectorType;
+};
+
+export enum NodeType {
+  IO,
+  NODE,
+}
+
+export interface NodeConfig {
+  nodeName: string;
+  colSpan: number;
+  rowSpan: number;
+  showLabel: boolean;
+  connectors: Record<string, Connector>;
+  showConnectorLabel: boolean;
+  type: NodeType;
+}
+
+export interface NodeDesign {
+  connectorHeight: number;
+  connectorWidth: number;
+  margin: number;
+  radius: number;
+  labelOffset: number;
+  tolerance: number;
+}
+
+const directionMap: Record<number, Vector> = {
+  [ConnectorDirection.LEFT]: new Vector(-1, 0),
+  [ConnectorDirection.RIGHT]: new Vector(1, 0),
+  [ConnectorDirection.TOP]: new Vector(0, -1),
+  [ConnectorDirection.BOTTOM]: new Vector(0, 1),
+};
+
+function createTexture(
+  name: string,
+  config: NodeConfig,
+  design: NodeDesign,
+): TextureGenerator[] {
+  const func = () => {
+    const container = new Container();
+    const g = new Graphics();
+    container.addChild(g);
+    const cs = Grid.cellSize;
+    const { rowSpan, colSpan, showConnectorLabel, showLabel } = config;
+    const {
+      connectorHeight: ch,
+      connectorWidth: cw,
+      margin,
+      radius,
+      labelOffset,
+    } = design;
+    const nW = cs * colSpan;
+    const nH = cs * rowSpan;
+    const w = nW + margin * 2;
+    const h = nH + margin * 2;
+    const c = new Vector(w / 2, h / 2);
+
+    g.roundRect(-nW / 2, -nH / 2, nW, nH, radius);
+    g.fill({ color: 0xdddddd });
+    g.roundRect(-nW / 2 + 2, -nH / 2 + 2, nW - 4, nH - 4, radius);
+    g.stroke({ width: 3, color: 0x000000 });
+
+    const {
+      RIGHT,
+      LEFT,
+      VERTICAL: HORIZOTAL,
+      HORIZONTAL: VERTICAL,
+      TOP,
+      BOTTOM,
+    } = ConnectorDirection;
+
+    for (const key in config.connectors) {
+      const connector = config.connectors[key];
+      const dir = connector.direction;
+      const v = dir & HORIZOTAL ? new Vector(1, 0) : new Vector(0, 1);
+      const v1 = directionMap[connector.direction].clone();
+      const p = new Vector(connector.idx * cs)
+        .subtract(c)
+        .addScalar(margin + cs / 2 - cw / 2)
+        .multiply(v);
+
+      const d = v1.multiply(
+        new Vector(nW / 2 + margin / 2, nH / 2 + margin / 2),
+      );
+      if (dir & HORIZOTAL) d.y -= ch / 2;
+      else d.x -= ch / 2;
+
+      p.add(d);
+
+      if (showConnectorLabel) {
+        const label = createText(key, 18, 0x000000);
+        label.x = p.x;
+        label.y = p.y;
+
+        if (dir & HORIZOTAL) {
+          label.x += cw / 2;
+          if (dir & TOP) label.y += labelOffset + ch / 2;
+          if (dir & BOTTOM) label.y -= labelOffset - ch / 2;
+        }
+
+        if (dir & VERTICAL) {
+          label.y += cw / 2;
+          if (dir & LEFT) label.x += labelOffset + ch / 2;
+          if (dir & RIGHT) label.x -= labelOffset - ch / 2;
+        }
+        container.addChild(label);
+      }
+
+      if (dir & VERTICAL) {
+        g.roundRect(p.x, p.y, ch, cw, 3);
+        g.fill({ color: 0x000000 });
+      } else {
+        g.roundRect(p.x, p.y, cw, ch, 3);
+        g.fill({ color: 0x000000 });
+      }
+    }
+
+    if (showLabel) {
+      const label = createText(name, 24, 0x000000);
+      label.x = 0;
+      label.y = 0;
+      container.addChild(label);
+    }
+
+    const frame = new Rectangle(-w / 2, -h / 2, w, h);
+
+    return {
+      name,
+      frame,
+      resolution: 3,
+      container,
+    };
+  };
+
+  return [func];
+}
+export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
+  static name: string = "AND";
+
+  //#region  static methods
+
+  static readonly design: NodeDesign = {
+    connectorWidth: Grid.cellSize / 2,
+    connectorHeight: 10,
+    margin: Grid.cellSize / 4,
+    radius: 8,
+    labelOffset: 22,
+    tolerance: 20,
+  };
+
+  static config?: NodeConfig = {
+    showLabel: true,
+    colSpan: 3,
+    rowSpan: 4,
+    connectors: {
+      A: {
+        direction: ConnectorDirection.TOP,
+        idx: 0,
+        type: ConnectorType.INPUT,
+      },
+      B: {
+        direction: ConnectorDirection.LEFT,
+        idx: 2,
+        type: ConnectorType.INPUT,
+      },
+      C: {
+        direction: ConnectorDirection.RIGHT,
+        idx: 1,
+        type: ConnectorType.OUTPUT,
+      },
+      D: {
+        direction: ConnectorDirection.BOTTOM,
+        idx: 1,
+        type: ConnectorType.OUTPUT,
+      },
+    },
+    nodeName: "AND",
+    showConnectorLabel: true,
+    type: NodeType.NODE,
+  };
+
+  static loadTextures(): TextureGenerator[] {
+    return createTexture(this.name, this.config!, this.design);
+  }
+
+  static adjustPos(node: NodeEntity) {
+    const cs = Grid.cellSize;
+    node.position.x += node.config.colSpan % 2 == 0 ? cs / 2 : 0;
+    node.position.y += node.config.rowSpan % 2 == 0 ? cs / 2 : 0;
+    Grid.snap(node.position);
+    node.position.x += node.config.colSpan % 2 == 1 ? cs / 2 : 0;
+    node.position.y += node.config.rowSpan % 2 == 1 ? cs / 2 : 0;
+  }
+
+  //#endregion
+
+  name: string = "";
+  sprite!: Sprite;
+  config: NodeConfig;
+
+  public _cells: number[] = [];
+  public _lastCol?: number;
+  public _lastRow?: number;
+  protected wires: Record<string, { wire: Wire; pos: Vector }[]> = {};
+
+  constructor() {
+    super();
+    this.config = NodeEntity.config!;
+    this.zIndex = 2;
+    this.collider = new BoxCollider(this.width, this.height, new Vector());
+  }
+
+  public testHit(p: Vector) {
+    const { rowSpan, colSpan } = this.config!;
+    const {
+      connectorWidth: cw,
+      tolerance,
+      margin,
+      connectorHeight: ch,
+    } = NodeEntity.design!;
+    const cs = Grid.cellSize;
+
+    const center = new Vector(this.position.x, this.position.y);
+    const delta = p.clone().subtract(center);
+    const absDx = Math.abs(delta.x);
+    const absDy = Math.abs(delta.y);
+    const halfW = (colSpan * cs) / 2;
+    const halfH = (rowSpan * cs) / 2;
+
+    const getIdx = (value: number, maxIdx: number) => {
+      let idx = Math.round(value / cw);
+      if (idx % 2 == 0) return -1;
+      idx = (idx - 1) / 2;
+      if (idx < 0 || idx >= maxIdx) return -1;
+      return idx;
+    };
+
+    if (absDx <= halfW - tolerance && absDy <= halfH - tolerance) {
+      return { type: "box", x: center.x, y: center.y };
+    }
+    const { RIGHT, LEFT, TOP, BOTTOM } = ConnectorDirection;
+    let direction: ConnectorDirection | null = null;
+    let idx = -1;
+    if (absDy > halfH - tolerance) {
+      direction = delta.y < 0 ? TOP : BOTTOM;
+      idx = getIdx(delta.x + halfW, this.config.colSpan);
+    } else if (absDx > halfW - tolerance) {
+      direction = delta.x < 0 ? LEFT : RIGHT;
+      idx = getIdx(delta.y + halfH, this.config.rowSpan);
+    }
+    if (direction && idx >= 0) {
+      for (const key in this.config.connectors) {
+        const conn = this.config.connectors[key];
+        if (conn.direction === direction && conn.idx === idx) {
+          const dirVec = directionMap[direction];
+          const edgeCenter = center
+            .clone()
+            .add(
+              dirVec
+                .clone()
+                .multiply(
+                  new Vector(halfW + margin - ch / 2, halfH + margin - ch / 2),
+                ),
+            );
+          const lateral =
+            direction === TOP || direction === BOTTOM
+              ? new Vector(-halfW + idx * cs + cs / 2, 0)
+              : new Vector(0, -halfH + idx * cs + cs / 2);
+          const finalPos = edgeCenter.add(lateral);
+          return {
+            type: "connector",
+            x: finalPos.x,
+            y: finalPos.y,
+            name: key,
+            connectorType: conn.type,
+            direction,
+          };
+        }
+      }
+    }
+    return undefined;
+  }
+
+  public getConnectorPos(name: string) {
+    const { rowSpan, colSpan } = this.config!;
+    const { margin, connectorHeight: ch } = NodeEntity.design!;
+    const { TOP, BOTTOM } = ConnectorDirection;
+    const cs = Grid.cellSize;
+    const center = new Vector(this.position.x, this.position.y);
+    const halfW = (colSpan * cs) / 2;
+    const halfH = (rowSpan * cs) / 2;
+    const { direction, idx } = this.config.connectors[name];
+    const dirVec = directionMap[direction];
+    const edgeCenter = center
+      .clone()
+      .add(
+        dirVec
+          .clone()
+          .multiply(
+            new Vector(halfW + margin - ch / 2, halfH + margin - ch / 2),
+          ),
+      );
+    const lateral =
+      direction === TOP || direction === BOTTOM
+        ? new Vector(-halfW + idx * cs + cs / 2, 0)
+        : new Vector(0, -halfH + idx * cs + cs / 2);
+    const finalPos = edgeCenter.add(lateral);
+    return new Vector(finalPos.x, finalPos.y);
+  }
+
+  public getNextNodes() {
+    const connectors = this.config.connectors;
+    const nodes: NodeEntity[] = [];
+    for (const name in connectors) {
+      const { type } = connectors[name];
+      if (
+        type == ConnectorType.OUTPUT &&
+        this.wires[name] &&
+        this.wires[name].length > 0
+      ) {
+        this.wires[name].forEach((item) => {
+          if (item.wire.startNode.node == this) {
+            nodes.push(item.wire.endNode.node);
+          } else {
+            nodes.push(item.wire.startNode.node);
+          }
+        });
+      }
+    }
+    return nodes;
+  }
+
+  public isValidConnector(name: string) {
+    if (!this.wires[name]) return true;
+    return this.wires[name].length == 0;
+  }
+
+  protected onInit(): void {
+    this.sprite = new Sprite(this.context.assets.get("AND"));
+    this.sprite.anchor.set(0.5);
+    const cs = Grid.cellSize;
+    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
+    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
+    this.addChild(this.sprite);
+    this.markDirty();
+    this.context.grid.registerEntity(this);
+  }
+
+  protected updateCollider(): void {
+    const { rowSpan, colSpan } = this.config;
+    const { margin } = NodeEntity.design;
+    const cs = Grid.cellSize;
+    const w = cs * colSpan + margin * 2;
+    const h = cs * rowSpan + margin * 2;
+    (this.collider as BoxCollider).set(
+      w,
+      h,
+      new Vector(this.position.x, this.position.y),
+    );
+  }
+
+  public deleteWire(startPin: string) {
+    delete this.wires[startPin];
+  }
+
+  public setWirePos(name: string, wire: Wire, pos: Vector) {
+    this.wires[name] ??= [];
+    this.wires[name].push({ wire, pos });
+  }
+
+  public delete() {
+    this.getConnectedWires().forEach((wire) => wire.delete());
+    this.context.grid.unregisterEntity(this);
+    this.parent?.removeChild(this);
+  }
+
+  public getConnectedWires() {
+    const wires: Wire[] = [];
+    for (const item in this.wires) {
+      wires.push(...this.wires[item].map((item) => item.wire));
+    }
+    return wires;
+  }
+
+  protected onDirty(): void {
+    for (const name in this.wires) {
+      const pos = this.getConnectorPos(name);
+      this.wires[name].forEach((item) => {
+        item.pos.set(pos);
+        item.wire.forceLayoutUpdate();
+      });
+    }
+  }
+}

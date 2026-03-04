@@ -5,14 +5,19 @@ export class Vector {
   public y: number = 0;
 
   constructor(a?: VectorData);
+  constructor(s?: number);
   constructor(x?: number, y?: number);
-  constructor(a: VectorData | number = 0, b: number = 0) {
+  constructor(a: VectorData | number = 0, b: number | null = null) {
     if (typeof a == "object") {
       this.x = a.x;
       this.y = a.y;
     } else {
       this.x = a;
-      this.y = b;
+      if (b == null) {
+        this.y = a;
+      } else {
+        this.y = b;
+      }
     }
   }
 
@@ -62,17 +67,41 @@ export class Vector {
     return this;
   }
 
-  multiply(scalar: number): this {
+  multiply(v: VectorData): this {
+    this.x *= v.x;
+    this.y *= v.y;
+    return this;
+  }
+
+  divide(v: VectorData): this {
+    this.x /= v.x;
+    this.y /= v.y;
+    return this;
+  }
+
+  multiplyScalar(scalar: number): this {
     this.x *= scalar;
     this.y *= scalar;
     return this;
   }
 
-  divide(scalar: number): this {
+  divideScalar(scalar: number): this {
     if (scalar !== 0) {
       this.x /= scalar;
       this.y /= scalar;
     }
+    return this;
+  }
+
+  addScalar(scalar: number): this {
+    this.x += scalar;
+    this.y += scalar;
+    return this;
+  }
+
+  subtractScalar(scalar: number): this {
+    this.x -= scalar;
+    this.y -= scalar;
     return this;
   }
 
@@ -122,7 +151,7 @@ export class Vector {
   normalize(): this {
     const mag = this.magnitude();
     if (mag !== 0) {
-      this.divide(mag);
+      this.divideScalar(mag);
     }
     return this;
   }
