@@ -11,7 +11,6 @@ export type EngineMouseEvent = {
   wDy: number;
   button: number;
   delta: number;
-  target: Container;
 };
 
 export enum MouseEventType {
@@ -42,6 +41,44 @@ type EventDataProps = {
   target: Container;
 };
 
+type CursorType =
+  | "auto"
+  | "default"
+  | "none"
+  | "context-menu"
+  | "help"
+  | "pointer"
+  | "progress"
+  | "wait"
+  | "cell"
+  | "crosshair"
+  | "text"
+  | "vertical-text"
+  | "alias"
+  | "copy"
+  | "move"
+  | "no-drop"
+  | "not-allowed"
+  | "grab"
+  | "grabbing"
+  | "all-scroll"
+  | "col-resize"
+  | "row-resize"
+  | "n-resize"
+  | "e-resize"
+  | "s-resize"
+  | "w-resize"
+  | "ne-resize"
+  | "nw-resize"
+  | "se-resize"
+  | "sw-resize"
+  | "ew-resize"
+  | "ns-resize"
+  | "nesw-resize"
+  | "nwse-resize"
+  | "zoom-in"
+  | "zoom-out";
+
 export class MouseController {
   private callbacks: EventsCallbacks = [];
 
@@ -65,11 +102,14 @@ export class MouseController {
     this.root.hitArea = new Rectangle(0, 0, canvas.width, canvas.height);
   }
 
-  private getEventData(e: EventDataProps, delta: number = 0): EngineMouseEvent {
-    const worldPos = this.world.toLocal(e.global);
+  private getEventData(
+    e: PointerEvent | WheelEvent,
+    delta: number = 0,
+  ): EngineMouseEvent {
+    const worldPos = this.world.toLocal(e);
     return {
-      vX: e.global.x,
-      vY: e.global.y,
+      vX: e.x,
+      vY: e.y,
       wX: worldPos.x,
       wY: worldPos.y,
       dx: 0,
@@ -78,8 +118,11 @@ export class MouseController {
       wDy: 0,
       button: e.buttons,
       delta,
-      target: e.target,
     };
+  }
+
+  set cursor(value: CursorType) {
+    this.canvas.style.cursor = value;
   }
 
   init() {
@@ -87,7 +130,7 @@ export class MouseController {
       e.preventDefault();
     });
 
-    this.root.on("pointerdown", (_e) => {
+    this.canvas.addEventListener("pointerdown", (_e) => {
       this.isDragging = true;
       const e = this.getEventData(_e);
       this.lastMouse = new Point(e.vX, e.vY);
@@ -96,7 +139,7 @@ export class MouseController {
       this.emit(MouseEventType.DOWN, e);
     });
 
-    this.root.on("pointerup", (_e) => {
+    this.canvas.addEventListener("pointerup", (_e) => {
       const e = this.getEventData(_e);
       this.isDragging = false;
       this.lastMouse = null;
@@ -104,7 +147,7 @@ export class MouseController {
       this.emit(MouseEventType.UP, { ...e, button: this.button });
     });
 
-    this.root.on("pointermove", (_e) => {
+    this.canvas.addEventListener("pointermove", (_e) => {
       const e = this.getEventData(_e);
       if (this.isDragging && this.lastMouse && this.lastMouseWorld) {
         const dx = e.vX - this.lastMouse.x;
@@ -115,17 +158,15 @@ export class MouseController {
         this.lastMouse.set(e.vX, e.vY);
         this.lastMouseWorld.set(e.wX, e.wY);
       }
-
       this.emit(MouseEventType.MOVE, e);
     });
 
-    this.root.on("pointerupoutside", (_e) => {
+    this.canvas.addEventListener("pointerout", (_e) => {
       this.isDragging = false;
       const e = this.getEventData(_e);
       this.emit(MouseEventType.OUTSIDE, e);
     });
-
-    this.root.on("wheel", (_e) => {
+    this.canvas.addEventListener("wheel", (_e) => {
       const e = this.getEventData(_e, _e.deltaY);
       this.emit(MouseEventType.WHEEL, e);
     });

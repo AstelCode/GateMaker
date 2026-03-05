@@ -1,8 +1,9 @@
 import { Container, Graphics } from "pixi.js";
 import { AABB, Entity, Vector, type VectorData } from "../core";
+import type { AppContext, AppEvents, AppProviders } from "../App";
 
 export class SelectionBox extends Container {
-  static color = 0x505050;
+  static color = 0x67a0d6;
   static alpha = 0.2;
 
   bounding: AABB;
@@ -47,7 +48,7 @@ export class SelectionBox extends Container {
     this.bounding.setFromTwoPoints(this.start, this.end);
   }
 
-  calcBounding(e: (Entity | undefined)[]) {
+  calcBounding(e: (Entity<AppProviders, AppEvents, AppContext> | undefined)[]) {
     AABB.merge(e, (e) => e && e.bounding, this.bounding);
     this.bounding.addPadding(this.padding);
     this.drawBox();

@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
 import { Camera } from "./Camera";
-import { Entity, MouseEventType, Vector } from "./core";
+import { Entity, MouseEventType, Vector, type EngineMouseEvent } from "./core";
 import {
   Engine,
   type DefaultEvents,
@@ -12,6 +12,7 @@ import { NodeEntity } from "./entities/NodeEntity";
 import { ToolManager } from "./toolManager/ToolManager";
 import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
+import { EditWireTool } from "./toolManager/tools/EditWireTool";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Providers {}
@@ -28,6 +29,13 @@ export interface AppContext {
 export type AppProviders = Providers & DefaultProvider;
 export type AppEvents = Events & DefaultEvents;
 
+export type AppEntity = Entity<AppProviders, AppEvents, AppContext>;
+export type AppEngineContext = EngineContext<
+  AppProviders,
+  AppEvents,
+  AppContext
+>;
+
 export class App extends Engine<AppProviders, AppEvents, AppContext> {
   grid!: Grid;
   camera!: Camera;
@@ -43,6 +51,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
 
     this.tools.register(new SelectionTool());
     this.tools.register(new CreateWireTool());
+    this.tools.register(new EditWireTool());
 
     const node = new NodeEntity();
     this.world.addChild(node);
@@ -63,7 +72,6 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.grid = new Grid();
     this.camera = new Camera(this.grid, this.world);
     this.tools = new ToolManager();
-    this.events.on("restoreTool", () => this.tools.restore());
   }
 
   protected async onInitTextures(): Promise<void> {
@@ -71,49 +79,45 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.assets.registerEntity(NodeEntity);
   }
 
-  private findHit(p: Vector): Entity | undefined {
-    for (let i = this.world.children.length - 1; 0 <= i; i--) {
-      const item = this.world.children[i];
-      if (item instanceof Entity) {
-        if (!item.bounding?.pointInside(p)) continue;
-        if (item.collider?.pointInside(p)) {
-          return item;
-        }
-      }
-    }
-    return undefined;
-  }
-
   protected iniEvents() {
     this.mouse.on(MouseEventType.DOWN, (e) => {
-      const hit = this.findHit(new Vector(e.wX, e.wY));
-      this.tools.onDown(e, hit);
+      const hit = this.world.getHit();
+      if (this.world.hasInteraction()) {
+        if (this.world.onMouseDown(e)) return;
+      }
+      this.tools.onDown(e, hit as any);
     });
+
     this.mouse.on(MouseEventType.DRAG, (e) => {
       this.camera.onDrag(e);
       this.tools.onDrag(e);
     });
+
     this.mouse.on(MouseEventType.MOVE, (e) => {
+      this.world.detectInteracion(e);
+      if (this.world.hasInteraction()) {
+        if (this.world.onMove(e)) return;
+      }
       this.tools.onMove(e);
     });
 
     this.mouse.on(MouseEventType.UP, (e) => {
+      if (this.world.hasInteraction()) {
+        if (this.world.onMouseUp(e)) return;
+      }
       this.tools.onUp(e);
     });
 
     this.mouse.on(MouseEventType.WHEEL, (e) => {
       this.camera.onWheel(e);
     });
+
     this.mouse.on(MouseEventType.OUTSIDE, (e) => {
       this.tools.onOutside(e);
     });
   }
 
-  protected createContext(): EngineContext<
-    AppProviders,
-    AppEvents,
-    AppContext
-  > {
+  protected createContext(): AppEngineContext {
     const context = super.createContext();
     return {
       ...context,

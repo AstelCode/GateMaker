@@ -1,4 +1,4 @@
-import type { AppContext, AppEvents, AppProviders } from "../../App";
+import type { AppEngineContext, AppEntity } from "../../App";
 import {
   MouseButton,
   Vector,
@@ -13,23 +13,23 @@ import type { Tool } from "../ToolManager";
 export class CreateWireTool implements Tool {
   keep: boolean = false;
   name: string = "create-wire";
-  priority: number = 1;
-  context!: EngineContext<AppProviders, AppEvents, AppContext>;
+  priority: number = 2;
+  context!: AppEngineContext;
   current?: Wire;
   completed: boolean = false;
 
-  IsValid(e: EngineMouseEvent, hit: Entity): boolean {
+  IsValid(e: EngineMouseEvent, hit: AppEntity): boolean {
     if (!(hit instanceof NodeEntity)) return false;
     const hitInsideNode = hit.testHit(new Vector(e.wX, e.wY));
     if (!hitInsideNode || hitInsideNode.type != "connector") return false;
     return true;
   }
 
-  IsUnlock(e: EngineMouseEvent, hit: Entity): boolean {
+  IsUnlock(e: EngineMouseEvent, hit: AppEntity): boolean {
     return this.completed;
   }
 
-  onDown(e: EngineMouseEvent, hit?: Entity): void {
+  onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     if (e.button == MouseButton.LEFT) {
       if (hit instanceof NodeEntity) {
         const connector = hit.testHit(new Vector(e.wX, e.wY));
@@ -64,10 +64,9 @@ export class CreateWireTool implements Tool {
               pos,
               connector.direction!,
             );
-            //this.root.addChild(this.current);
             this.current.forceLayoutUpdate();
             this.current = undefined;
-            this.context.events.emit("restoreTool");
+            this.context.tools.restore();
           }
         }
       } else if (hit instanceof Wire || !hit) {
@@ -81,7 +80,7 @@ export class CreateWireTool implements Tool {
         this.current.destroy(true);
         delete this.current;
         this.current = undefined;
-        this.context.events.emit("restoreTool");
+        this.context.tools.restore();
       }
     }
   }

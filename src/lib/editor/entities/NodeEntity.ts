@@ -5,6 +5,7 @@ import {
   Entity,
   Vector,
   type EngineContext,
+  type EngineMouseEvent,
   type TextureGenerator,
 } from "../core";
 import { Grid } from "../Grid";
@@ -204,6 +205,11 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         idx: 1,
         type: ConnectorType.OUTPUT,
       },
+      E: {
+        direction: ConnectorDirection.BOTTOM,
+        idx: 2,
+        type: ConnectorType.OUTPUT,
+      },
     },
     nodeName: "AND",
     showConnectorLabel: true,
@@ -236,6 +242,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   constructor() {
     super();
+    this.name = "AND";
     this.config = NodeEntity.config!;
     this.zIndex = 2;
     this.collider = new BoxCollider(this.width, this.height, new Vector());
@@ -309,6 +316,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         }
       }
     }
+    if (absDx <= halfW && absDy <= halfH) {
+      return { type: "box", x: center.x, y: center.y };
+    }
     return undefined;
   }
 
@@ -367,7 +377,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   protected onInit(): void {
-    this.sprite = new Sprite(this.context.assets.get("AND"));
+    this.sprite = new Sprite(this.context.assets.get(this.name));
     this.sprite.anchor.set(0.5);
     const cs = Grid.cellSize;
     this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
@@ -421,5 +431,12 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         item.wire.forceLayoutUpdate();
       });
     }
+    this.context.grid.registerEntity(this);
+  }
+  protected onMouseHover(e: EngineMouseEvent): boolean | void {
+    this.context.mouse.cursor = "pointer";
+  }
+  protected onMouseLeave(e: EngineMouseEvent): boolean | void {
+    this.context.mouse.cursor = "default";
   }
 }

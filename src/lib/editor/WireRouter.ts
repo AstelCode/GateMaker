@@ -1,3 +1,4 @@
+/* eslint-disable no-debugger */
 import type { Vector } from "./core";
 import type { Wire } from "./entities/Wire";
 import { Grid } from "./Grid";
@@ -129,22 +130,29 @@ export class WireRouter {
     return [];
   }
 
-  static simplifyPath(points: Vector[]): Vector[] {
+  static simplifyPath(points: Vector[], interations = 2): Vector[] {
     if (points.length <= 2) return points;
-    const out: Vector[] = [points[0]];
-
-    for (let i = 1; i < points.length - 1; i++) {
-      const a = points[i - 1];
-      const b = points[i];
-      const c = points[i + 1];
-
-      // Si están alineados horizontal o verticalmente, saltamos el punto intermedio
-      if ((a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y)) {
-        continue;
+    let l: Vector[] = points,
+      out: Vector[] = [];
+    for (let j = 0; j < interations; j++) {
+      out = [l[0]];
+      for (let i = 1; i < l.length - 1; i++) {
+        const a = l[i - 1];
+        const b = l[i];
+        const c = l[i + 1];
+        if (a.x === b.x && a.y === b.y) continue;
+        if ((a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y)) {
+          continue;
+        }
+        out.push(b);
       }
-      out.push(b);
+      const last = l[l.length - 1];
+      const prev = out[out.length - 1];
+      if (last.x !== prev.x || last.y !== prev.y) {
+        out.push(last);
+      }
+      l = out;
     }
-    out.push(points[points.length - 1]);
-    return out;
+    return l;
   }
 }

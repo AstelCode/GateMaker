@@ -1,21 +1,28 @@
-import type { AppContext, AppEvents, AppProviders } from "../App";
+import type {
+  AppContext,
+  AppEngineContext,
+  AppEntity,
+  AppEvents,
+  AppProviders,
+} from "../App";
 import type { EngineContext, EngineMouseEvent, Entity } from "../core";
 
 export interface Tool {
   name: string;
   priority: number;
   keep?: boolean;
-  context: EngineContext<AppProviders, AppEvents, AppContext>;
-  IsValid(e: EngineMouseEvent, hit?: Entity): boolean;
-  IsUnlock(e: EngineMouseEvent, hit?: Entity): boolean;
+  context: AppEngineContext;
+  IsValid(e: EngineMouseEvent, hit?: AppEntity): boolean;
+  IsUnlock(e: EngineMouseEvent, hit?: AppEntity): boolean;
   init?(): void;
   load?(): void;
-  onDown?(e: EngineMouseEvent, hits?: Entity): void;
+  onDown?(e: EngineMouseEvent, hit?: AppEntity): void;
   onDrag?(e: EngineMouseEvent): void;
   onUp?(e: EngineMouseEvent): void;
-  onMove?(e: EngineMouseEvent): void;
+  onMove?(e: EngineMouseEvent, hit?: AppEntity): void;
   onWheel?(e: EngineMouseEvent): void;
   onOutside?(e: EngineMouseEvent): void;
+  onGlobalMove?(e: EngineMouseEvent, hit?: AppEntity): void;
   reset?(): void;
   destroy?(): void;
 }
@@ -43,12 +50,17 @@ export class ToolManager {
     this.current = tool;
   }
 
+  use(name: string) {
+    const tool = this.registry.get(name);
+    if (tool) this.activate(tool);
+  }
+
   restore() {
     this.current?.reset?.();
     this.current = null;
   }
 
-  tryActivate(e: EngineMouseEvent, hit?: Entity) {
+  tryActivate(e: EngineMouseEvent, hit?: AppEntity) {
     if (this.current) return;
     for (const tool of this.sorted) {
       if (tool.IsValid(e, hit)) {
@@ -58,25 +70,47 @@ export class ToolManager {
     }
   }
 
-  checkUnlock(e: EngineMouseEvent, hit?: Entity) {
+  checkUnlock(e: EngineMouseEvent, hit?: AppEntity) {
     const tool = this.current;
     if (!tool) return;
-
+    if (!tool.keep) {
+      this.current?.reset?.();
+    }
     if (tool.IsUnlock?.(e, hit)) {
-      if (!tool.keep) {
-        this.restore();
-      }
+      this.restore();
     }
   }
 
-  onDown(e: EngineMouseEvent, hit?: Entity) {
+  callDown(e: EngineMouseEvent, hit?: AppEntity) {
+    this.current?.onDown?.(e, hit);
+  }
+
+  callDrag(e: EngineMouseEvent) {
+    this.current?.onDrag?.(e);
+  }
+
+  callMove(e: EngineMouseEvent) {
+    this.current?.onMove?.(e);
+  }
+
+  callUp(e: EngineMouseEvent) {
+    this.current?.onUp?.(e);
+  }
+
+  callOutside(e: EngineMouseEvent) {
+    this.current?.onOutside?.(e);
+  }
+
+  onDown(e: EngineMouseEvent, hit?: AppEntity) {
     this.checkUnlock(e, hit);
     this.tryActivate(e, hit);
     this.current?.onDown?.(e, hit);
   }
+
   onDrag(e: EngineMouseEvent) {
     this.current?.onDrag?.(e);
   }
+
   onMove(e: EngineMouseEvent) {
     this.current?.onMove?.(e);
   }

@@ -1,9 +1,16 @@
 import { Graphics } from "pixi.js";
-import { Entity, PathCollider, pointInsideLine, Vector } from "../core";
+import {
+  Entity,
+  PathCollider,
+  pointInsideLine,
+  Vector,
+  type EngineMouseEvent,
+} from "../core";
 import { Grid } from "../Grid";
 import { ConnectorDirection, type NodeEntity } from "./NodeEntity";
 import type { AppContext, AppEvents, AppProviders } from "../App";
 import { WireRouter } from "../WireRouter";
+import { SelectionBox } from "./SelectionBox";
 
 interface NodeInfo {
   pin: string;
@@ -14,6 +21,7 @@ interface NodeInfo {
 
 export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   static lineHeight: number = 12;
+  static padding: number = 10;
   public startNode!: NodeInfo;
   public endNode!: NodeInfo;
   public path: Vector[];
@@ -22,6 +30,9 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   public endPos: Vector;
   public _cells: number[] = [];
   public completed: boolean;
+  public selected: boolean = false;
+  public activeIdx: number = -1;
+
   private g: Graphics;
 
   constructor() {
@@ -37,7 +48,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   public init(): void {
-    this.collider = new PathCollider(this.path, Wire.lineHeight);
+    this.collider = new PathCollider(this.path, Wire.lineHeight + Wire.padding);
   }
 
   public delete() {
@@ -47,6 +58,88 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.context.grid.unregisterWire(this);
   }
 
+  private drawPath() {
+    for (let i = 0; i < this.path.length; i++) {
+      const p = this.path[i];
+      if (i == 0) this.g.moveTo(p.x, p.y);
+      else this.g.lineTo(p.x, p.y);
+    }
+  }
+
+  public select() {
+    this.selected = true;
+    this.draw();
+  }
+
+  public unSelect() {
+    this.selected = false;
+    this.draw();
+  }
+
+  public draw() {
+    this.g.clear();
+
+    if (this.selected) {
+      this.g.beginPath();
+      this.drawPath();
+      if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
+      this.g.stroke({
+        color: SelectionBox.color,
+        join: "round",
+        width: Wire.lineHeight + 5,
+      });
+    }
+
+    this.g.beginPath();
+    this.drawPath();
+    if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
+    this.g.stroke({ color: 0x000000, join: "round", width: Wire.lineHeight });
+
+    this.g.beginPath();
+    this.drawPath();
+    if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
+    this.g.stroke({
+      color: 0xffffff,
+      join: "round",
+      width: Wire.lineHeight - 3,
+    });
+    this.g.beginPath();
+    if (this.activeIdx != -1) {
+      const start = this.path[this.activeIdx];
+      const end = this.path[this.activeIdx + 1];
+      this.g.beginPath();
+      this.g.moveTo(start.x, start.y);
+      this.g.lineTo(end.x, end.y);
+      this.g.stroke({
+        color: SelectionBox.color,
+        join: "round",
+        cap: "round",
+        alpha: 0.5,
+        width: Wire.lineHeight + 5,
+      });
+    }
+  }
+
+  protected onDirty(): void {
+    this.draw();
+  }
+
+  //#region selection
+  public getSegment(pos: Vector) {
+    for (let i = 0; i < this.path.length - 1; i++) {
+      const a = this.path[i];
+      const b = this.path[i + 1];
+      if (pointInsideLine(a, b, pos, Wire.lineHeight + Wire.padding)) {
+        if (1 > i || i > this.path.length - 3) return -1;
+        return i;
+      }
+    }
+
+    return -1;
+  }
+  //#endregion
+
+  //#region create
   public startWire(
     node: NodeEntity,
     name: string,
@@ -74,8 +167,8 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.path.push(this.endPos);
     this.completed = true;
     this.recalc();
-    this.forceLayoutUpdate();
     this.points.length = 0;
+    this.forceLayoutUpdate();
   }
 
   public addPoint(pos: Vector) {
@@ -86,7 +179,27 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.points.push(pos);
     this.draw();
   }
+  //#endregion
 
+  //#region drag
+  public moveSegment(idx: number, delta: Vector) {
+    if (1 > idx || idx > this.path.length - 3) return;
+    const a = this.path[idx];
+    const b = this.path[idx + 1];
+
+    if (a.x == b.x) {
+      const d = new Vector(delta.x, 0);
+      a.add(d);
+      b.add(d);
+    }
+
+    if (a.y == b.y) {
+      const d = new Vector(0, delta.y);
+      a.add(d);
+      b.add(d);
+    }
+    this.forceLayoutUpdate();
+  }
   public translate(dx: number, dy: number) {
     for (let i = 0; i < this.points.length; i++) {
       const p = this.points[i];
@@ -104,29 +217,13 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
 
     this.markDirty();
   }
-
   public moveLastPoint(pos: Vector) {
     this.endPos.set(pos);
     this.draw();
   }
+  //#endregion
 
-  public updateLastSegments() {
-    if (this.path.length <= 2) return;
-    const a = this.path[this.path.length - 2];
-    const b = this.path[1];
-    if (this.endNode.direction & ConnectorDirection.HORIZONTAL) {
-      a.y = this.endPos.y;
-    } else {
-      a.x = this.endPos.x;
-    }
-
-    if (this.startNode.direction & ConnectorDirection.HORIZONTAL) {
-      b.y = this.startPos.y;
-    } else {
-      b.x = this.startPos.x;
-    }
-  }
-
+  //#region update path
   public fixDiagonalSegments() {
     for (let i = 0; i < this.path.length - 1; i++) {
       const a = this.path[i];
@@ -150,58 +247,28 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     }
   }
 
-  public getSegment(pos: Vector) {
-    for (let i = 0; i < this.path.length - 1; i++) {
-      const a = this.path[i];
-      const b = this.path[i + 1];
-      if (pointInsideLine(a, b, pos, Wire.lineHeight)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  public moveSegment(idx: number, delta: Vector) {
-    if (1 > idx || idx > this.path.length - 1) return;
-    const a = this.path[idx];
-    const b = this.path[idx + 1];
-
-    if (a.x == b.x) {
-      const d = new Vector(delta.x, 0);
-      a.add(d);
-      b.add(d);
+  public updateLastSegments() {
+    if (this.path.length <= 2) return;
+    const a = this.path[this.path.length - 2];
+    const b = this.path[1];
+    if (this.endNode.direction & ConnectorDirection.HORIZONTAL) {
+      a.y = this.endPos.y;
+    } else {
+      a.x = this.endPos.x;
     }
 
-    if (a.y == b.y) {
-      const d = new Vector(0, delta.y);
-      a.add(d);
-      b.add(d);
+    if (this.startNode.direction & ConnectorDirection.HORIZONTAL) {
+      b.y = this.startPos.y;
+    } else {
+      b.x = this.startPos.x;
     }
-    this.forceLayoutUpdate();
   }
 
   public adjustSegment(idx: number) {
-    if (1 > idx || idx > this.path.length - 1) return;
+    if (1 > idx || idx > this.path.length - 3) return;
     Wire.adjustPoint(this.path[idx]);
     Wire.adjustPoint(this.path[idx + 1]);
     this.forceLayoutUpdate();
-  }
-
-  public getNodes() {
-    return [this.startNode.node, this.endNode.node];
-  }
-
-  static adjustPoint(p: Vector) {
-    const cellSize = Grid.cellSize;
-    p.y = Math.floor(p.y / cellSize) * cellSize;
-    p.x = Math.floor(p.x / cellSize) * cellSize;
-    p.x += cellSize / 2;
-    p.y += cellSize / 2;
-  }
-
-  static adjust(x: number) {
-    const cellSize = Grid.cellSize;
-    return Math.floor(x / cellSize) * cellSize + cellSize / 2;
   }
 
   public adjustPathToGrid() {
@@ -213,35 +280,6 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       const p = this.path[i];
       Wire.adjustPoint(p);
     }
-  }
-
-  public draw() {
-    this.g.clear();
-    this.g.beginPath();
-    for (let i = 0; i < this.path.length; i++) {
-      const p = this.path[i];
-      if (i == 0) this.g.moveTo(p.x, p.y);
-      else this.g.lineTo(p.x, p.y);
-    }
-    if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
-    this.g.stroke({ color: 0x000000, join: "round", width: Wire.lineHeight });
-
-    this.g.beginPath();
-    for (let i = 0; i < this.path.length; i++) {
-      const p = this.path[i];
-      if (i == 0) this.g.moveTo(p.x, p.y);
-      else this.g.lineTo(p.x, p.y);
-    }
-    if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
-    this.g.stroke({
-      color: 0xffffff,
-      join: "round",
-      width: Wire.lineHeight - 3,
-    });
-  }
-
-  protected onDirty(): void {
-    this.draw();
   }
 
   public recalc() {
@@ -296,5 +334,43 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.path.length = 0;
     for (const p of simplified) this.path.push(p);
     this.markDirty();
+  }
+
+  static adjustPoint(p: Vector) {
+    const cellSize = Grid.cellSize;
+    p.y = Math.floor(p.y / cellSize) * cellSize;
+    p.x = Math.floor(p.x / cellSize) * cellSize;
+    p.x += cellSize / 2;
+    p.y += cellSize / 2;
+  }
+
+  //#endregion
+
+  //#region node relation
+  public getNodes() {
+    return [this.startNode.node, this.endNode.node];
+  }
+
+  //#endregion
+
+  protected onMouseHover(e: EngineMouseEvent): boolean | void {
+    if (this.activeIdx != -1) {
+      this.context.mouse.cursor = "pointer";
+      this.draw();
+    } else {
+      this.context.mouse.cursor = "default";
+    }
+  }
+
+  protected onMouseLeave(e: EngineMouseEvent): boolean | void {
+    this.context.mouse.cursor = "default";
+    this.activeIdx = -1;
+    this.draw();
+  }
+
+  protected onMouseMove(e: EngineMouseEvent): boolean | void {
+    const p = new Vector(e.wX, e.wY);
+    this.activeIdx = this.getSegment(p);
+    this.draw();
   }
 }

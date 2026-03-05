@@ -3,24 +3,23 @@ import {
   Entity,
   MouseButton,
   Vector,
-  type EngineContext,
   type EngineMouseEvent,
 } from "../../core";
 import type { Tool } from "../ToolManager";
-import type { AppProviders, AppEvents, AppContext } from "../../App";
+import type { AppEntity, AppEngineContext } from "../../App";
 import { NodeEntity } from "../../entities/NodeEntity";
 import { SelectionBox } from "../../entities/SelectionBox";
 import { Wire } from "../../entities/Wire";
 
 export class SelectionTool implements Tool {
   priority: number = 0;
-  context!: EngineContext<AppProviders, AppEvents, AppContext>;
+  context!: AppEngineContext;
   name = "selection";
-  lock = true;
+  lock = false;
   keep = true;
   box!: SelectionBox;
 
-  selection!: Entity[];
+  selection!: AppEntity[];
 
   active = false;
   draggingSelection = false;
@@ -33,11 +32,13 @@ export class SelectionTool implements Tool {
   activeWires = new Map<string, Wire>();
   bothSelectedWires: Set<Wire> = new Set();
 
-  //#region block tools
-  IsValid(e: EngineMouseEvent, hit?: Entity): boolean {
-    if (e.button !== MouseButton.LEFT) return false;
-    if (!hit) return true;
+  activeWire?: Wire;
 
+  //#region block tools
+  IsValid(e: EngineMouseEvent, hit?: AppEntity): boolean {
+    if (hit instanceof Wire && e.button == MouseButton.RIGHT) return true;
+    if (e.button == MouseButton.MIDDLE) return false;
+    if (!hit) return true;
     if (hit instanceof NodeEntity) {
       const result = hit.testHit(new Vector(e.wX, e.wY));
       return result?.type === "box";
@@ -46,7 +47,7 @@ export class SelectionTool implements Tool {
     return false;
   }
 
-  IsUnlock(e: EngineMouseEvent, hit?: Entity): boolean {
+  IsUnlock(e: EngineMouseEvent, hit?: AppEntity): boolean {
     return false;
   }
   //#endregion
@@ -64,9 +65,9 @@ export class SelectionTool implements Tool {
     this.draggingSelection = false;
   }
 
-  findSelection(): Entity[] {
+  findSelection(): AppEntity[] {
     if (!this.box) return [];
-    let selection: Entity[] = [];
+    let selection: AppEntity[] = [];
     const nodeMen = new Set<NodeEntity>();
     for (let i = this.context.world.children.length - 1; i >= 0; i--) {
       const child = this.context.world.children[i];
@@ -100,14 +101,24 @@ export class SelectionTool implements Tool {
     return selection;
   }
 
-  onDown(e: EngineMouseEvent, hit?: Entity): void {
-    if (e.button != MouseButton.LEFT) return;
+  onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     const v = new Vector(e.wX, e.wY);
+
     if (this.active && this.box.bounding.pointInside(v) && !this.isWire) {
       this.draggingSelection = true;
-      this.context.root.cursor = "pointer";
+      //this.context.root.cursor = "pointer";
+      //this.context.mouse.cursor = "pointer";
       this.lastMouse.set(v);
       this.cacheSelection();
+      return;
+    }
+
+    if (hit instanceof Wire && e.button == MouseButton.LEFT) {
+      this.active = false;
+      this.draggingSelection = false;
+      this.box.clear();
+      this.context.tools.use("edit-wire"); //* important
+      this.context.tools.callDown(e, hit); //* important
       return;
     }
 
@@ -116,15 +127,30 @@ export class SelectionTool implements Tool {
       this.selection.push(hit);
       this.box.calcBounding([hit]);
       this.active = true;
-
       this.isWire = hit instanceof Wire;
+      if (this.activeWire && hit != this.activeWire) {
+        this.activeWire.unSelect();
+      }
+      if (hit instanceof Wire) {
+        this.activeWire = hit;
+        hit.select();
+      }
       this.draggingSelection = !this.isWire;
-      this.context.root.cursor = "pointer";
+      this.context.mouse.cursor = "pointer";
       this.wireSelectionOnly = this.isWire;
       this.lastMouse.set(v);
       this.cacheSelection();
-
       return;
+    }
+
+    for (const item of this.selection) {
+      if (item instanceof Wire) {
+        item.unSelect();
+      }
+    }
+    if (this.activeWire) {
+      this.activeWire.unSelect();
+      this.activeWire = undefined;
     }
 
     this.active = false;
@@ -140,12 +166,11 @@ export class SelectionTool implements Tool {
     if (e.button !== MouseButton.LEFT) return;
     const v = new Vector(e.wX, e.wY);
     if (this.draggingSelection) {
-      this.context.root.cursor = "pointer";
+      //this.context.mouse.cursor = "pointer";
     }
     if (this.wireSelectionOnly) {
       if (this.wireSelectionOnly) {
-        //AppEvents.emit("changeTool", { name: "edit_wire" });
-        //AppEvents.get("tools")?.current?.onDown?.(e, this.out[0]);
+        this.context.tools.restore();
         return;
       }
 
@@ -190,7 +215,7 @@ export class SelectionTool implements Tool {
 
   onUp(e: EngineMouseEvent): void {
     if (e.button !== MouseButton.LEFT) return;
-    this.context.root.cursor = "default";
+    //this.context.mouse.cursor = "default";
 
     this.box.updateBounding();
 
@@ -203,7 +228,7 @@ export class SelectionTool implements Tool {
       for (const item of this.activeWires) {
         item[1].adjustPathToGrid();
         item[1].updateLastSegments();
-        item[1].markDirty();
+        item[1].forceLayoutUpdate();
       }
 
       this.activeWires.clear();
@@ -216,15 +241,20 @@ export class SelectionTool implements Tool {
     }
 
     if (!this.draggingSelection) {
+      for (const item of this.selection)
+        if (item instanceof Wire) item.unSelect();
+
       this.selection.length = 0;
       this.selection = this.findSelection();
       this.box.clear();
 
       if (this.selection.length === 0) {
-        this.context.events.emit("restoreTool");
+        this.context.tools.restore();
         this.active = false;
       } else {
         this.active = true;
+        for (const item of this.selection)
+          if (item instanceof Wire) item.select();
         this.box.calcBounding(this.selection);
       }
     }
@@ -266,6 +296,7 @@ export class SelectionTool implements Tool {
       }
     }
   }
+
   destroy(): void {
     this.context.world.removeChild(this.box);
   }

@@ -86,6 +86,7 @@ export class Engine<
       antialias: true,
       resolution: window.devicePixelRatio || 1,
     });
+    this.app.renderer.events.destroy();
     this.container.appendChild(this.app.canvas);
     this.app.stage.eventMode = "dynamic";
     this.app.stage.hitArea = this.app.screen;

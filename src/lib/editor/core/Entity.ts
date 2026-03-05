@@ -5,7 +5,8 @@ import { AABB } from "./AABB/AABB";
 import { uuid } from "./utils/uuid";
 import type { Collider } from "./colliders/ICollider";
 import type { Vector } from "./math/Vector";
-import { Transform } from "./math/Transform";
+import type { BoxCollider } from "./colliders/BoxCollider";
+import type { EngineMouseEvent } from "./controllers/MouseController";
 
 export class Entity<
   T extends DefaultProvider = DefaultProvider,
@@ -17,14 +18,13 @@ export class Entity<
   public context!: EngineContext<T, U, Z>;
   public collider?: Collider;
   public bounding?: AABB;
-  //public transform!: Transform;
+  public interactionBox?: BoxCollider;
 
   constructor() {
     super();
     this.id = uuid();
     this.eventMode = "none";
     this.dirtyLayout = true;
-    // this.transform = new Transform();
   }
 
   public update(_delta: number) {
@@ -41,8 +41,6 @@ export class Entity<
   public init() {
     this.onInit?.();
   }
-
-  //#region
 
   //#region update layout
   protected onDirty?(): void;
@@ -67,20 +65,19 @@ export class Entity<
   public forceLayoutUpdate() {
     this.updateCollider?.();
     this.updateBounding();
-    //this.syncTrasnform();
     this.onDirty?.();
   }
 
-  //public syncTrasnform() {
-  //  this.position.set(this.transform.position.x, this.transform.position.y);
-  //  this.scale.set(this.transform.scale.x, this.transform.scale.y);
-  //  this.rotation = this.transform.rotation;
-  //}
+  protected updateInteractionBounding() {
+    if (!this.interactionBox) return;
+    this.interactionBox.center.set(this.position);
+  }
 
-  public updateBounding() {
+  private updateBounding() {
     if (this.collider) {
       if (!this.bounding) this.bounding = this.collider?.getAABB();
       else this.collider.getAABB(this.bounding);
+      this.updateInteractionBounding();
     } else {
       if (!this.collider && this.children.length === 0) {
         this.bounding = undefined;
@@ -104,27 +101,35 @@ export class Entity<
   //#endregion
 
   //#region mouse events
-  public _mouseUp(pos: Vector): void {
-    this.onMouseUp?.(pos);
+  public _mouseUp(e: EngineMouseEvent): boolean | void {
+    return this.onMouseUp?.(e);
   }
-  public _mouseDown(pos: Vector): void {
-    this.onMouseDown?.(pos);
+  public _mouseDown(e: EngineMouseEvent): boolean | void {
+    return this.onMouseDown?.(e);
   }
-  public _mouseMove(pos: Vector): void {
-    this.onMouseMove?.(pos);
+  public _mouseMove(e: EngineMouseEvent): boolean | void {
+    return this.onMouseMove?.(e);
   }
-  public _mouseClick(pos: Vector): void {
-    this.onMouseClick?.(pos);
+  public _mouseClick(e: EngineMouseEvent): boolean | void {
+    return this.onMouseClick?.(e);
+  }
+  public _mouseWheel(e: EngineMouseEvent): boolean | void {
+    return this.onMouseWheel?.(e);
+  }
+  public _mouseHover(e: EngineMouseEvent): boolean | void {
+    return this.onMouseHover?.(e);
+  }
+  public _mouseLeave(e: EngineMouseEvent): boolean | void {
+    return this.onMouseLeave?.(e);
   }
 
-  public _mouseWheel(pos: Vector): void {
-    this.onMouseWheel?.(pos);
-  }
-  protected onMouseWheel?(pos: Vector): void;
-  protected onMouseDown?(pos: Vector): void;
-  protected onMouseUp?(pos: Vector): void;
-  protected onMouseClick?(pos: Vector): void;
-  protected onMouseMove?(pos: Vector): void;
+  protected onMouseHover?(e: EngineMouseEvent): boolean | void;
+  protected onMouseWheel?(e: EngineMouseEvent): boolean | void;
+  protected onMouseDown?(e: EngineMouseEvent): boolean | void;
+  protected onMouseUp?(e: EngineMouseEvent): boolean | void;
+  protected onMouseClick?(e: EngineMouseEvent): boolean | void;
+  protected onMouseMove?(e: EngineMouseEvent): boolean | void;
+  protected onMouseLeave?(e: EngineMouseEvent): boolean | void;
 
   //#endregion
 }
