@@ -38,7 +38,6 @@ export class World extends Container {
   }
 
   public hit?: Entity;
-  public prevHit?: Entity;
   public active: boolean = false;
   public currentHit?: Entity;
 
@@ -72,15 +71,11 @@ export class World extends Container {
   public detectInteracion(e: EngineMouseEvent) {
     const hit = this.findHit(new Vector(e.wX, e.wY));
     this.currentHit = hit;
-    if (!hit && this.prevHit) {
-      this.prevHit?._mouseLeave(e);
-      this.prevHit = undefined;
-      return;
-    }
-    if (this.hit != hit) {
-      this.active = hit?._mouseHover(e) ?? true;
-      this.prevHit = this.hit;
-      this.hit = hit;
+    if (hit === this.hit) return;
+    this.hit?._mouseLeave(e);
+    this.hit = hit;
+    if (hit) {
+      this.active = hit._mouseHover(e) ?? true;
     }
   }
 

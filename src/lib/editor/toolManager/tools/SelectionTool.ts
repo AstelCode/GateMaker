@@ -10,6 +10,7 @@ import type { AppEntity, AppEngineContext } from "../../App";
 import { NodeEntity } from "../../entities/NodeEntity";
 import { SelectionBox } from "../../entities/SelectionBox";
 import { Wire } from "../../entities/Wire";
+import type { Container } from "pixi.js";
 
 export class SelectionTool implements Tool {
   priority: number = 0;
@@ -60,6 +61,7 @@ export class SelectionTool implements Tool {
   }
 
   reset(): void {
+    this.box.clear();
     this.active = false;
     this.selection.length = 0;
     this.draggingSelection = false;
@@ -101,13 +103,69 @@ export class SelectionTool implements Tool {
     return selection;
   }
 
+  updateContextMenu(hit: Container | undefined, p: Vector) {
+    if (!hit) {
+      this.context.events.emit("setContextMenu", [
+        { id: "add", name: "Add Node", data: { p } },
+      ]);
+    }
+    if (hit instanceof NodeEntity) {
+      this.context.events.emit("setContextMenu", [
+        {
+          id: "delete",
+          name: "Delete",
+          color: "red",
+          data: [hit],
+        },
+      ]);
+    }
+    if (hit instanceof Wire) {
+      this.context.events.emit("setContextMenu", [
+        { id: "delete", name: "Delete", color: "red", data: [hit] },
+        { id: "route", name: "Route", data: [hit] },
+      ]);
+    }
+    if (hit instanceof SelectionBox) {
+      if (this.selection.find((item) => item instanceof NodeEntity)) {
+        this.context.events.emit("setContextMenu", [
+          {
+            id: "delete",
+            name: "Delete",
+            color: "red",
+            data: this.selection.slice(),
+          },
+        ]);
+      } else {
+        this.context.events.emit("setContextMenu", [
+          {
+            id: "delete",
+            name: "Delete",
+            color: "red",
+            data: this.selection.slice(),
+          },
+          {
+            id: "route",
+            name: "Route",
+            data: this.selection.slice(),
+          },
+        ]);
+      }
+    }
+  }
+
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     const v = new Vector(e.wX, e.wY);
+    if (e.button == MouseButton.RIGHT) {
+      this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
+    } else {
+      this.context.events.emit("closeContextMenu");
+    }
 
     if (this.active && this.box.bounding.pointInside(v) && !this.isWire) {
+      if (e.button == MouseButton.RIGHT) {
+        this.updateContextMenu(this.box, new Vector(e.vX, e.vY));
+      }
       this.draggingSelection = true;
-      //this.context.root.cursor = "pointer";
-      //this.context.mouse.cursor = "pointer";
       this.lastMouse.set(v);
       this.cacheSelection();
       return;
@@ -123,6 +181,7 @@ export class SelectionTool implements Tool {
     }
 
     if (hit) {
+      this.updateContextMenu(hit, new Vector(e.vX, e.vY));
       this.selection.length = 0;
       this.selection.push(hit);
       this.box.calcBounding([hit]);
@@ -152,7 +211,7 @@ export class SelectionTool implements Tool {
       this.activeWire.unSelect();
       this.activeWire = undefined;
     }
-
+    this.updateContextMenu(undefined, new Vector(e.vX, e.vY));
     this.active = false;
     this.draggingSelection = false;
     this.isWire = false;
@@ -263,8 +322,8 @@ export class SelectionTool implements Tool {
   }
 
   onOutside(e: EngineMouseEvent): void {
-    e.button = MouseButton.LEFT;
-    this.onUp(e);
+    //e.button = MouseButton.LEFT;
+    //this.onUp(e);
   }
 
   private cacheSelection() {
@@ -296,7 +355,6 @@ export class SelectionTool implements Tool {
       }
     }
   }
-
   destroy(): void {
     this.context.world.removeChild(this.box);
   }

@@ -13,11 +13,18 @@ import { ToolManager } from "./toolManager/ToolManager";
 import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
+import type { Wire } from "./entities/Wire";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Providers {}
 interface Events {
   restoreTool: any;
+
+  setContextMenu: { name: string; id: string; data: any; color?: string }[];
+  openContextMenu: { x: number; y: number };
+  closeContextMenu: any;
+  contextOptionSelected: any;
+  [T: `context_${string}`]: any;
 }
 
 export interface AppContext {
@@ -42,6 +49,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
   tools!: ToolManager;
 
   g!: Graphics;
+  protected background: number = 0xf6f8fb;
 
   protected onInit(): void {
     this.grid.init(this.context);
@@ -65,7 +73,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.g.fill(0xff0000);
     this.g.zIndex = 10;
 
-    this.world.addChild(this.g);
+    //this.world.addChild(this.g);
   }
 
   protected onCreate(): void {
@@ -115,6 +123,18 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.mouse.on(MouseEventType.OUTSIDE, (e) => {
       this.tools.onOutside(e);
     });
+
+    this.context.events.on("contextOptionSelected", () =>
+      this.context.tools.restore(),
+    );
+
+    this.context.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
+      data.forEach((data) => data.delete());
+    });
+
+    this.context.events.on("context_route", (wire: Wire[]) => {
+      wire.forEach((wire) => wire.recalc());
+    });
   }
 
   protected createContext(): AppEngineContext {
@@ -125,5 +145,9 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       camera: this.camera,
       tools: this.tools,
     };
+  }
+
+  public getEvents() {
+    return this.events;
   }
 }

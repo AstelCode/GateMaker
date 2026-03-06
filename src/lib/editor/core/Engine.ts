@@ -54,6 +54,7 @@ export class Engine<
   protected assets!: AssetManager;
 
   protected context!: EngineContext<IProviders, IEvents, IContext>;
+  protected background: number = 0xffffff;
 
   static loadTextures(): TextureData[] {
     return [];
@@ -82,7 +83,7 @@ export class Engine<
 
   private async createApp() {
     await this.app.init({
-      background: "#ffffff",
+      background: this.background,
       antialias: true,
       resolution: window.devicePixelRatio || 1,
     });

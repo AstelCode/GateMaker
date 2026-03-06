@@ -87,10 +87,10 @@ function createTexture(
     const h = nH + margin * 2;
     const c = new Vector(w / 2, h / 2);
 
-    g.roundRect(-nW / 2, -nH / 2, nW, nH, radius);
-    g.fill({ color: 0xdddddd });
+    g.roundRect(-nW / 2, -nH / 2, nW, nH, radius + 2);
+    g.fill({ color: 0xf56499 });
     g.roundRect(-nW / 2 + 2, -nH / 2 + 2, nW - 4, nH - 4, radius);
-    g.stroke({ width: 3, color: 0x000000 });
+    g.stroke({ width: 3, color: 0x202845 });
 
     const {
       RIGHT,
@@ -175,7 +175,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     connectorWidth: Grid.cellSize / 2,
     connectorHeight: 10,
     margin: Grid.cellSize / 4,
-    radius: 8,
+    radius: 10,
     labelOffset: 22,
     tolerance: 20,
   };
@@ -233,6 +233,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   name: string = "";
   sprite!: Sprite;
+  g!: Graphics;
   config: NodeConfig;
 
   public _cells: number[] = [];
@@ -246,6 +247,19 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.config = NodeEntity.config!;
     this.zIndex = 2;
     this.collider = new BoxCollider(this.width, this.height, new Vector());
+  }
+
+  protected onInit(): void {
+    this.sprite = new Sprite(this.context.assets.get(this.name));
+    this.g = new Graphics();
+    this.sprite.anchor.set(0.5);
+    const cs = Grid.cellSize;
+    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
+    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
+    this.addChild(this.g);
+    this.addChild(this.sprite);
+    this.markDirty();
+    this.context.grid.registerEntity(this);
   }
 
   public testHit(p: Vector) {
@@ -316,9 +330,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         }
       }
     }
-    if (absDx <= halfW && absDy <= halfH) {
+    /*  if (absDx <= halfW && absDy <= halfH) {
       return { type: "box", x: center.x, y: center.y };
-    }
+    } */
     return undefined;
   }
 
@@ -376,17 +390,6 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     return this.wires[name].length == 0;
   }
 
-  protected onInit(): void {
-    this.sprite = new Sprite(this.context.assets.get(this.name));
-    this.sprite.anchor.set(0.5);
-    const cs = Grid.cellSize;
-    this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
-    this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
-    this.addChild(this.sprite);
-    this.markDirty();
-    this.context.grid.registerEntity(this);
-  }
-
   protected updateCollider(): void {
     const { rowSpan, colSpan } = this.config;
     const { margin } = NodeEntity.design;
@@ -423,6 +426,40 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     return wires;
   }
 
+  activeConnector?: {
+    name: string;
+    x: number;
+    y: number;
+    direction: ConnectorDirection;
+  };
+
+  public draw() {
+    this.g.clear();
+    if (!this.activeConnector) return;
+    const { x, y, direction } = this.activeConnector;
+    const { connectorWidth: cw, connectorHeight: ch } = NodeEntity.design;
+    const { HORIZONTAL, VERTICAL, LEFT, TOP } = ConnectorDirection;
+    if (direction & HORIZONTAL) {
+      this.g.roundRect(
+        x - this.position.x - (ch - 2) + (direction & LEFT ? -2 : 10),
+        y - this.position.y - (cw - 6) / 2,
+        ch - 2,
+        cw - 6,
+        3,
+      );
+    }
+    if (direction & VERTICAL) {
+      this.g.roundRect(
+        x - this.position.x - (cw - 6) / 2,
+        y - this.position.y + (direction & TOP ? -10 : 2),
+        cw - 6,
+        ch - 2,
+        3,
+      );
+    }
+    this.g.fill({ color: 0x404040 });
+  }
+
   protected onDirty(): void {
     for (const name in this.wires) {
       const pos = this.getConnectorPos(name);
@@ -436,7 +473,24 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   protected onMouseHover(e: EngineMouseEvent): boolean | void {
     this.context.mouse.cursor = "pointer";
   }
+
+  protected onMouseMove(e: EngineMouseEvent): boolean | void {
+    const connector = this.testHit(new Vector(e.wX, e.wY));
+    if (!connector) return;
+    if (connector?.type == "box") {
+      this.activeConnector = undefined;
+    }
+    this.activeConnector = {
+      name: connector.name!,
+      x: connector.x!,
+      y: connector.y!,
+      direction: connector.direction!,
+    };
+    this.draw();
+  }
   protected onMouseLeave(e: EngineMouseEvent): boolean | void {
+    this.activeConnector = undefined;
+    this.draw();
     this.context.mouse.cursor = "default";
   }
 }

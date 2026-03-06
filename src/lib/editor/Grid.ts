@@ -19,15 +19,11 @@ function createTexture(): TextureGenerator[] {
     container.addChild(g);
 
     const cs = Grid.cellSize;
-    const color = 0xdddddd;
-    const cornerSize = 8;
-    //g.roundRect(cs / 2 - cornerSize, cs / 2 - 2, cornerSize * 2, 4, 4);
-    //g.fill({ color });
-    //g.roundRect(cs / 2 - 2, cs / 2 - cornerSize, 4, cornerSize * 2, 4);
-    //g.fill({ color });
+    const color = 0xdde3ee;
 
-    g.rect(0, 0, cs, cs);
-    g.stroke({ color, width: 4 });
+    g.beginPath();
+    g.arc(cs / 2, cs / 2, 5, 0, Math.PI * 2);
+    g.fill({ color });
 
     return {
       name: "GRID",

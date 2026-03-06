@@ -86,6 +86,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       this.g.stroke({
         color: SelectionBox.color,
         join: "round",
+        cap: "round",
         width: Wire.lineHeight + 5,
       });
     }
@@ -93,7 +94,12 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.g.beginPath();
     this.drawPath();
     if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
-    this.g.stroke({ color: 0x000000, join: "round", width: Wire.lineHeight });
+    this.g.stroke({
+      color: 0x000000,
+      join: "round",
+      cap: "round",
+      width: Wire.lineHeight,
+    });
 
     this.g.beginPath();
     this.drawPath();
@@ -101,12 +107,14 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.g.stroke({
       color: 0xffffff,
       join: "round",
+      cap: "round",
       width: Wire.lineHeight - 3,
     });
     this.g.beginPath();
-    if (this.activeIdx != -1) {
+    if (this.activeIdx != -1 && this.path.length > 0) {
       const start = this.path[this.activeIdx];
       const end = this.path[this.activeIdx + 1];
+      if (!start || !end) return;
       this.g.beginPath();
       this.g.moveTo(start.x, start.y);
       this.g.lineTo(end.x, end.y);
@@ -371,6 +379,11 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   protected onMouseMove(e: EngineMouseEvent): boolean | void {
     const p = new Vector(e.wX, e.wY);
     this.activeIdx = this.getSegment(p);
+    if (this.activeIdx != -1) {
+      this.context.mouse.cursor = "pointer";
+    } else {
+      this.context.mouse.cursor = "default";
+    }
     this.draw();
   }
 }

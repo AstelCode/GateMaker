@@ -130,7 +130,7 @@ export class WireRouter {
     return [];
   }
 
-  static simplifyPath(points: Vector[], interations = 2): Vector[] {
+  static simplifyPath(points: Vector[], interations = 3): Vector[] {
     if (points.length <= 2) return points;
     let l: Vector[] = points,
       out: Vector[] = [];
