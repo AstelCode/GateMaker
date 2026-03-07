@@ -47,7 +47,7 @@ export class Grid {
   }
 
   public init(context: EngineContext<AppProviders, AppEvents, AppContext>) {
-    const texture = context.assets.get("GRID");
+    const texture = context.assets.get("GRID").texture;
     const dpr = window.devicePixelRatio || 1;
     if (!texture) {
       console.error("¡La textura GRID no fue registrada!");

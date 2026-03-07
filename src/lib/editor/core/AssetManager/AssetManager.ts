@@ -1,4 +1,12 @@
-import { Assets, Container, Rectangle, type Renderer, Texture } from "pixi.js";
+import {
+  Application,
+  Assets,
+  Container,
+  Rectangle,
+  type Renderer,
+  Texture,
+  TextureUvs,
+} from "pixi.js";
 
 export interface TextureData {
   container: Container;
@@ -12,7 +20,7 @@ interface createTextureConstructor {
   loadTextures?(): TextureGenerator[];
 }
 export class AssetManager {
-  private cache = new Map<string, Texture>();
+  private cache = new Map<string, { texture: Texture; src: string }>();
   private generators = new Map<string, TextureGenerator>();
   private renderer: Renderer;
 
@@ -20,7 +28,10 @@ export class AssetManager {
     this.renderer = renderer;
   }
 
-  async loadTexture(key: string, url: string): Promise<Texture> {
+  async loadTexture(
+    key: string,
+    url: string,
+  ): Promise<{ texture: Texture; src: string }> {
     if (this.cache.has(key)) return this.cache.get(key)!;
 
     const texture = await Assets.load(url);
@@ -28,26 +39,27 @@ export class AssetManager {
     return texture;
   }
 
-  registerTexture(key: string, texture: Texture) {
-    this.cache.set(key, texture);
+  async registerTexture(key: string, texture: Texture) {
+    const src = await this.renderer.extract.base64(texture);
+    this.cache.set(key, { texture, src });
   }
 
-  createTexture(generators: TextureGenerator[] | TextureGenerator) {
+  async createTexture(generators: TextureGenerator[] | TextureGenerator) {
     if (!Array.isArray(generators)) {
       generators = [generators];
     }
     for (const generator of generators) {
       const data = generator();
       this.generators.set(data.name, generator);
-      this.generateAndCache(data);
+      await this.generateAndCache(data);
     }
   }
 
-  registerEntity(entity: createTextureConstructor) {
-    if (entity.loadTextures) this.createTexture(entity.loadTextures());
+  async registerEntity(entity: createTextureConstructor) {
+    if (entity.loadTextures) await this.createTexture(entity.loadTextures());
   }
 
-  reloadTexture(key: string): Texture {
+  async reloadTexture(key: string) {
     const generator = this.generators.get(key);
 
     if (!generator) {
@@ -55,13 +67,13 @@ export class AssetManager {
     }
     const oldTexture = this.cache.get(key);
     if (oldTexture) {
-      oldTexture.destroy(true);
+      oldTexture.texture.destroy(true);
     }
     const newData = generator();
-    return this.generateAndCache(newData);
+    return await this.generateAndCache(newData);
   }
 
-  private generateAndCache(data: TextureData): Texture {
+  private async generateAndCache(data: TextureData) {
     const texture = this.renderer.generateTexture({
       target: data.container,
       resolution: data.resolution,
@@ -70,22 +82,24 @@ export class AssetManager {
 
     texture.source.scaleMode = "linear";
     data.container.destroy({ children: true });
-
-    this.cache.set(data.name, texture);
-    return texture;
+    const src = await this.renderer.extract.base64(texture);
+    this.cache.set(data.name, { texture, src });
+    return { texture, src };
   }
 
-  get(key: string): Texture {
-    const tex = this.cache.get(key);
-    if (!tex) {
+  get(key: string) {
+    const data = this.cache.get(key);
+    if (!data) {
       throw new Error(`Texture "${key}" not found`);
     }
-    return tex;
+
+    return data;
   }
 
   unload(key: string) {
-    const texture = this.cache.get(key);
-    if (texture) {
+    const data = this.cache.get(key);
+    if (data) {
+      const { texture } = data;
       texture.destroy(true);
       this.cache.delete(key);
     }
@@ -93,7 +107,7 @@ export class AssetManager {
   }
 
   clear() {
-    this.cache.forEach((tex) => tex.destroy(true));
+    this.cache.forEach((tex) => tex.texture.destroy(true));
     this.cache.clear();
   }
 }

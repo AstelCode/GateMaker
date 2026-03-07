@@ -106,7 +106,7 @@ export class SelectionTool implements Tool {
   updateContextMenu(hit: Container | undefined, p: Vector) {
     if (!hit) {
       this.context.events.emit("setContextMenu", [
-        { id: "add", name: "Add Node", data: { p } },
+        { id: "add", name: "Add Node", data: { x: p.x, y: p.y } },
       ]);
     }
     if (hit instanceof NodeEntity) {
@@ -121,8 +121,8 @@ export class SelectionTool implements Tool {
     }
     if (hit instanceof Wire) {
       this.context.events.emit("setContextMenu", [
-        { id: "delete", name: "Delete", color: "red", data: [hit] },
         { id: "route", name: "Route", data: [hit] },
+        { id: "delete", name: "Delete", color: "red", data: [hit] },
       ]);
     }
     if (hit instanceof SelectionBox) {
@@ -138,14 +138,14 @@ export class SelectionTool implements Tool {
       } else {
         this.context.events.emit("setContextMenu", [
           {
-            id: "delete",
-            name: "Delete",
-            color: "red",
+            id: "route",
+            name: "Route",
             data: this.selection.slice(),
           },
           {
-            id: "route",
-            name: "Route",
+            id: "delete",
+            name: "Delete",
+            color: "red",
             data: this.selection.slice(),
           },
         ]);
@@ -158,12 +158,12 @@ export class SelectionTool implements Tool {
     if (e.button == MouseButton.RIGHT) {
       this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
     } else {
-      this.context.events.emit("closeContextMenu");
+      this.context.events.emit("closeModal");
     }
 
     if (this.active && this.box.bounding.pointInside(v) && !this.isWire) {
       if (e.button == MouseButton.RIGHT) {
-        this.updateContextMenu(this.box, new Vector(e.vX, e.vY));
+        this.updateContextMenu(this.box, new Vector(e.wX, e.wY));
       }
       this.draggingSelection = true;
       this.lastMouse.set(v);
@@ -181,12 +181,23 @@ export class SelectionTool implements Tool {
     }
 
     if (hit) {
-      this.updateContextMenu(hit, new Vector(e.vX, e.vY));
+      if (hit instanceof NodeEntity) {
+        const test = hit.testHit(new Vector(e.wX, e.wY));
+        if (test?.type == "connector") {
+          this.reset();
+          this.context.tools.use("create-wire");
+          this.context.tools.callDown(e, hit);
+          return;
+        }
+      }
+
+      this.updateContextMenu(hit, new Vector(e.wX, e.wY));
       this.selection.length = 0;
       this.selection.push(hit);
       this.box.calcBounding([hit]);
       this.active = true;
       this.isWire = hit instanceof Wire;
+
       if (this.activeWire && hit != this.activeWire) {
         this.activeWire.unSelect();
       }
@@ -211,7 +222,7 @@ export class SelectionTool implements Tool {
       this.activeWire.unSelect();
       this.activeWire = undefined;
     }
-    this.updateContextMenu(undefined, new Vector(e.vX, e.vY));
+    this.updateContextMenu(undefined, new Vector(e.wX, e.wY));
     this.active = false;
     this.draggingSelection = false;
     this.isWire = false;
@@ -224,9 +235,6 @@ export class SelectionTool implements Tool {
   onDrag(e: EngineMouseEvent): void {
     if (e.button !== MouseButton.LEFT) return;
     const v = new Vector(e.wX, e.wY);
-    if (this.draggingSelection) {
-      //this.context.mouse.cursor = "pointer";
-    }
     if (this.wireSelectionOnly) {
       if (this.wireSelectionOnly) {
         this.context.tools.restore();

@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
 import { Camera } from "./Camera";
-import { Entity, MouseEventType, Vector, type EngineMouseEvent } from "./core";
+import { Entity, MouseEventType } from "./core";
 import {
   Engine,
   type DefaultEvents,
@@ -8,12 +8,14 @@ import {
   type EngineContext,
 } from "./core/Engine";
 import { Grid } from "./Grid";
-import { NodeEntity } from "./entities/NodeEntity";
+
 import { ToolManager } from "./toolManager/ToolManager";
 import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
+
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
-import type { Wire } from "./entities/Wire";
+import { Wire, AndNode, NodeEntity } from "./entities";
+import { NodeRegister } from "./NodeRegister";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Providers {}
@@ -22,8 +24,14 @@ interface Events {
 
   setContextMenu: { name: string; id: string; data: any; color?: string }[];
   openContextMenu: { x: number; y: number };
-  closeContextMenu: any;
+  closeModal: any;
   contextOptionSelected: any;
+
+  setComponentCatalog: { name: string; src: string }[];
+  openComponentCatalog: { x: number; y: number };
+  closeComponentCatalog: { x: number; y: number };
+  onComponentSelected: { name: string; x: number; y: number };
+
   [T: `context_${string}`]: any;
 }
 
@@ -55,15 +63,18 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.grid.init(this.context);
     this.root.addChild(this.grid.sprite);
     this.tools.init(this.context);
-    this.camera.move(this.app.canvas.width / 2, this.app.canvas.height / 2);
+    this.camera.move(
+      this.app.canvas.width / 2 - 200,
+      this.app.canvas.height / 2,
+    );
 
     this.tools.register(new SelectionTool());
     this.tools.register(new CreateWireTool());
     this.tools.register(new EditWireTool());
 
-    const node = new NodeEntity();
+    const node = new AndNode();
     this.world.addChild(node);
-    const node1 = new NodeEntity();
+    const node1 = new AndNode();
     node1.position.x += 400;
     this.world.addChild(node1);
 
@@ -83,8 +94,8 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
   }
 
   protected async onInitTextures(): Promise<void> {
-    this.assets.registerEntity(Grid);
-    this.assets.registerEntity(NodeEntity);
+    await this.assets.registerEntity(Grid);
+    await this.assets.createTexture(NodeRegister.getTextures());
   }
 
   protected iniEvents() {
@@ -124,16 +135,25 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       this.tools.onOutside(e);
     });
 
-    this.context.events.on("contextOptionSelected", () =>
-      this.context.tools.restore(),
-    );
+    this.events.on("contextOptionSelected", () => this.context.tools.restore());
 
-    this.context.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
+    this.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
       data.forEach((data) => data.delete());
+      this.tools.restore();
     });
 
-    this.context.events.on("context_route", (wire: Wire[]) => {
+    this.events.on("context_route", (wire: Wire[]) => {
       wire.forEach((wire) => wire.recalc());
+    });
+
+    this.events.on("context_add", (data) => {
+      this.events.emit("openComponentCatalog", data);
+    });
+    this.events.on("onComponentSelected", (data) => {
+      const node = new (NodeRegister.get(data.name)!)();
+      node.position.set(data.x, data.y);
+      this.world.addChild(node);
+      AndNode.adjustPos(node);
     });
   }
 
@@ -149,5 +169,15 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
 
   public getEvents() {
     return this.events;
+  }
+
+  public startUI() {
+    this.events.emit(
+      "setComponentCatalog",
+      NodeRegister.getNames().map((name) => ({
+        name,
+        src: this.assets.get(name).src,
+      })),
+    );
   }
 }

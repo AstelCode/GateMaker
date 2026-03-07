@@ -21,6 +21,7 @@ const ContextMenu = ({
     <div
       style={{ left: x, top: y }}
       className="absolute w-30   top-25 left-25 border border-gray-700 bg-white rounded-sm overflow-hidden"
+      onContextMenu={(e) => e.preventDefault()}
     >
       {options.map((option) => (
         <div
@@ -36,27 +37,82 @@ const ContextMenu = ({
   );
 };
 
+const ComponentsCatalog = ({
+  items = [],
+  onClick,
+}: {
+  items: { src: string; name: string }[];
+  onClick: (name: string) => void;
+}) => {
+  return (
+    <div
+      onContextMenu={(e) => e.preventDefault()}
+      className="absolute right-2.5 top-2.5 border border-gray-700 w-80 h-[calc(100vh-20px)] rounded-[10px] bg-white"
+    >
+      <div className="w-full grid place-content-center h-20">
+        <input
+          className="border border-gray-700 rounded-lg w-64 h-10 outline-none px-4 text-center text-lg"
+          placeholder="buscar"
+        />
+      </div>
+
+      <div className="px-5 min-w-80 w-80  grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]   content-start gap-10 h-[calc(100%-80px)]">
+        {items.map((item) => (
+          <div
+            className="w-30 h-33 rounded-[10px] flex flex-col items-center justify-between hover:bg-stone-100 hover:border duration-75 py-1"
+            onClick={() => onClick(item.name)}
+            key={item.name}
+          >
+            <div className="w-20 h-20 grid place-content-center">
+              <img src={item.src} width={70} />
+            </div>
+            <span>{item.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const Editor = () => {
   const ref = useRef<HTMLDivElement>(null);
+
   const appInfoRef = useRef<AppInfo | null>(null);
-  const [options, setOptions] = useState<
-    {
-      name: string;
-      id: string;
-      data: any;
-      color?: string;
-    }[]
-  >([]);
 
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(
-    null,
-  );
+  const [uiState, setUiState] = useState<{
+    contextMenu: {
+      options: { name: string; id: string; data: any; color?: string }[];
+      position: { x: number; y: number } | null;
+    };
+    catalog: {
+      items: { name: string; src: string }[];
+      isOpen: boolean;
+      position: { x: number; y: number } | null;
+    };
+  }>({
+    contextMenu: { options: [], position: null },
+    catalog: { items: [], isOpen: false, position: null },
+  });
 
-  const onClick = (id: string, data: any) => {
+  const onClickContext = (id: string, data: any) => {
     if (!appInfoRef.current) return;
     appInfoRef.current.engine.getEvents().emit(`context_${id}`, data);
     appInfoRef.current.engine.getEvents().emit(`contextOptionSelected`);
-    setPosition(null);
+    setUiState((prev) => ({
+      ...prev,
+      contextMenu: { ...prev.contextMenu, position: null },
+    }));
+  };
+
+  const onClickCatalog = (name: string) => {
+    if (!appInfoRef.current) return;
+    setUiState((prev) => ({
+      ...prev,
+      catalog: { ...prev.catalog, isOpen: false },
+    }));
+    appInfoRef.current.engine
+      .getEvents()
+      .emit("onComponentSelected", { name, ...uiState.catalog.position! });
   };
 
   useEffect(() => {
@@ -68,17 +124,50 @@ export const Editor = () => {
     (async () => {
       const info = await createApp(container);
 
-      info.engine.getEvents().on("setContextMenu", (data) => {
-        setOptions(data);
+      info.engine.getEvents().on("setContextMenu", (options) => {
+        setUiState((prev) => ({
+          ...prev,
+          contextMenu: { ...prev.contextMenu, options },
+        }));
       });
 
-      info.engine.getEvents().on("openContextMenu", (data) => {
-        setPosition(data);
+      info.engine.getEvents().on("openContextMenu", (position) => {
+        setUiState((prev) => ({
+          ...prev,
+          contextMenu: { ...prev.contextMenu, position },
+        }));
       });
 
-      info.engine.getEvents().on("closeContextMenu", () => {
-        setPosition(null);
+      info.engine.getEvents().on("closeModal", () => {
+        setUiState((prev) => ({
+          ...prev,
+          contextMenu: { ...prev.contextMenu, position: null },
+          catalog: { ...prev.catalog, isOpen: false },
+        }));
       });
+
+      info.engine.getEvents().on("setComponentCatalog", (items) => {
+        setUiState((prev) => ({
+          ...prev,
+          catalog: { ...prev.catalog, items },
+        }));
+      });
+
+      info.engine.getEvents().on("openComponentCatalog", (data) => {
+        setUiState((prev) => ({
+          ...prev,
+          catalog: { ...prev.catalog, isOpen: true, position: data },
+        }));
+      });
+
+      info.engine.getEvents().on("closeComponentCatalog", () => {
+        setUiState((prev) => ({
+          ...prev,
+          catalog: { ...prev.catalog, isOpen: false },
+        }));
+      });
+
+      info.engine.startUI();
 
       if (cancelled) {
         destroyApp(info);
@@ -100,12 +189,18 @@ export const Editor = () => {
 
   return (
     <div className="w-screen h-screen" ref={ref}>
-      {position && (
+      {uiState.contextMenu.position && (
         <ContextMenu
-          options={options}
-          onClick={onClick}
-          x={position.x}
-          y={position.y}
+          options={uiState.contextMenu.options}
+          onClick={onClickContext}
+          x={uiState.contextMenu.position.x}
+          y={uiState.contextMenu.position.y}
+        />
+      )}
+      {uiState.catalog.isOpen && (
+        <ComponentsCatalog
+          items={uiState.catalog.items}
+          onClick={onClickCatalog}
         />
       )}
     </div>

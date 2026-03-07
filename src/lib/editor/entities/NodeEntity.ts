@@ -88,7 +88,7 @@ function createTexture(
     const c = new Vector(w / 2, h / 2);
 
     g.roundRect(-nW / 2, -nH / 2, nW, nH, radius + 2);
-    g.fill({ color: 0xf56499 });
+    g.fill({ color: 0xdddddd });
     g.roundRect(-nW / 2 + 2, -nH / 2 + 2, nW - 4, nH - 4, radius);
     g.stroke({ width: 3, color: 0x202845 });
 
@@ -167,7 +167,7 @@ function createTexture(
   return [func];
 }
 export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
-  static name: string = "AND";
+  static name: string;
 
   //#region  static methods
 
@@ -180,41 +180,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     tolerance: 20,
   };
 
-  static config?: NodeConfig = {
-    showLabel: true,
-    colSpan: 3,
-    rowSpan: 4,
-    connectors: {
-      A: {
-        direction: ConnectorDirection.TOP,
-        idx: 0,
-        type: ConnectorType.INPUT,
-      },
-      B: {
-        direction: ConnectorDirection.LEFT,
-        idx: 2,
-        type: ConnectorType.INPUT,
-      },
-      C: {
-        direction: ConnectorDirection.RIGHT,
-        idx: 1,
-        type: ConnectorType.OUTPUT,
-      },
-      D: {
-        direction: ConnectorDirection.BOTTOM,
-        idx: 1,
-        type: ConnectorType.OUTPUT,
-      },
-      E: {
-        direction: ConnectorDirection.BOTTOM,
-        idx: 2,
-        type: ConnectorType.OUTPUT,
-      },
-    },
-    nodeName: "AND",
-    showConnectorLabel: true,
-    type: NodeType.NODE,
-  };
+  static config: NodeConfig;
 
   static loadTextures(): TextureGenerator[] {
     return createTexture(this.name, this.config!, this.design);
@@ -250,14 +216,14 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   protected onInit(): void {
-    this.sprite = new Sprite(this.context.assets.get(this.name));
+    this.sprite = new Sprite(this.context.assets.get(this.name).texture);
     this.g = new Graphics();
     this.sprite.anchor.set(0.5);
     const cs = Grid.cellSize;
     this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
     this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
-    this.addChild(this.g);
     this.addChild(this.sprite);
+    this.addChild(this.g);
     this.markDirty();
     this.context.grid.registerEntity(this);
   }
@@ -280,12 +246,14 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     const halfH = (rowSpan * cs) / 2;
 
     const getIdx = (value: number, maxIdx: number) => {
-      let idx = Math.round(value / cw);
-      if (idx % 2 == 0) return -1;
-      idx = (idx - 1) / 2;
-      if (idx < 0 || idx >= maxIdx) return -1;
+      let idx = Math.floor(value / cw);
+      if (idx < 0) return -1;
+      if (idx % 2 == 1) return -1;
+      idx = idx / 2;
+      if (idx > maxIdx) return -1;
       return idx;
     };
+    if (this.position == undefined) return undefined;
 
     if (absDx <= halfW - tolerance && absDy <= halfH - tolerance) {
       return { type: "box", x: center.x, y: center.y };
@@ -293,13 +261,16 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     const { RIGHT, LEFT, TOP, BOTTOM } = ConnectorDirection;
     let direction: ConnectorDirection | null = null;
     let idx = -1;
-    if (absDy > halfH - tolerance) {
+    if (absDy > halfH - tolerance && absDx < halfW - margin) {
       direction = delta.y < 0 ? TOP : BOTTOM;
-      idx = getIdx(delta.x + halfW, this.config.colSpan);
-    } else if (absDx > halfW - tolerance) {
-      direction = delta.x < 0 ? LEFT : RIGHT;
-      idx = getIdx(delta.y + halfH, this.config.rowSpan);
+      idx = getIdx(delta.x + halfW - (cs - cw) / 2, this.config.colSpan);
     }
+
+    if (absDx > halfW - tolerance && absDy < halfH - margin) {
+      direction = delta.x < 0 ? LEFT : RIGHT;
+      idx = getIdx(delta.y + halfH - (cs - cw) / 2, this.config.rowSpan);
+    }
+
     if (direction && idx >= 0) {
       for (const key in this.config.connectors) {
         const conn = this.config.connectors[key];
@@ -330,9 +301,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         }
       }
     }
-    /*  if (absDx <= halfW && absDy <= halfH) {
+    if (absDx <= halfW && absDy <= halfH) {
       return { type: "box", x: center.x, y: center.y };
-    } */
+    }
     return undefined;
   }
 
@@ -415,7 +386,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   public delete() {
     this.getConnectedWires().forEach((wire) => wire.delete());
     this.context.grid.unregisterEntity(this);
-    this.parent?.removeChild(this);
+    this.destroy();
   }
 
   public getConnectedWires() {
@@ -441,23 +412,23 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     const { HORIZONTAL, VERTICAL, LEFT, TOP } = ConnectorDirection;
     if (direction & HORIZONTAL) {
       this.g.roundRect(
-        x - this.position.x - (ch - 2) + (direction & LEFT ? -2 : 10),
-        y - this.position.y - (cw - 6) / 2,
-        ch - 2,
-        cw - 6,
+        x - this.position.x - ch + (direction & LEFT ? 6 : 4),
+        y - this.position.y - cw / 2,
+        ch,
+        cw,
         3,
       );
     }
     if (direction & VERTICAL) {
       this.g.roundRect(
-        x - this.position.x - (cw - 6) / 2,
-        y - this.position.y + (direction & TOP ? -10 : 2),
-        cw - 6,
-        ch - 2,
+        x - this.position.x - cw / 2,
+        y - this.position.y + (direction & TOP ? -4 : -6),
+        cw,
+        ch,
         3,
       );
     }
-    this.g.fill({ color: 0x404040 });
+    this.g.fill({ color: "#646484" });
   }
 
   protected onDirty(): void {
@@ -476,7 +447,11 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   protected onMouseMove(e: EngineMouseEvent): boolean | void {
     const connector = this.testHit(new Vector(e.wX, e.wY));
-    if (!connector) return;
+    if (!connector) {
+      this.activeConnector = undefined;
+      this.draw();
+      return;
+    }
     if (connector?.type == "box") {
       this.activeConnector = undefined;
     }

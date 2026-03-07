@@ -21,7 +21,7 @@ interface NodeInfo {
 
 export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   static lineHeight: number = 12;
-  static padding: number = 10;
+  static padding: number = 15;
   public startNode!: NodeInfo;
   public endNode!: NodeInfo;
   public path: Vector[];
