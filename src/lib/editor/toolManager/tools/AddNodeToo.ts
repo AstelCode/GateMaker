@@ -32,6 +32,7 @@ export class AddNodeTool implements Tool {
     if (e.button != MouseButton.LEFT) return;
     if (!this.hit) return;
     NodeEntity.adjustPos(this.hit);
+    this.hit.unSelect();
     this.hit.forceLayoutUpdate();
     this.context.tools.restore();
     this.active = false;

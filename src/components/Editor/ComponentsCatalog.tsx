@@ -31,9 +31,13 @@ export const ComponentsCatalog = () => {
       setSearchTerm("");
       setIsOpen(false);
     });
+    app?.engine.getEvents().on("openComponentCatalog", () => {
+      setIsOpen(true);
+    });
   }, [app]);
 
   const onClick = (name: string) => {
+    setIsOpen(false);
     app?.engine.getEvents().emit("onComponentSelected", { name });
   };
 

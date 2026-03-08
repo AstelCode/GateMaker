@@ -41,12 +41,12 @@ export class SelectionTool implements Tool {
     if (e.button == MouseButton.MIDDLE) return false;
     if (!hit) return true;
     if (hit instanceof NodeEntity) {
-      /*  if (
+      if (
         hit.interactionBox &&
         hit.interactionBox.pointInside(new Vector(e.wX, e.wY))
       ) {
         return false;
-      } */
+      }
       const result = hit.testHit(new Vector(e.wX, e.wY));
       return result?.type === "box";
     }
@@ -111,9 +111,9 @@ export class SelectionTool implements Tool {
 
   updateContextMenu(hit: Container | undefined, p: Vector) {
     if (!hit) {
-      /*      this.context.events.emit("setContextMenu", [
+      this.context.events.emit("setContextMenu", [
         { id: "add", name: "Add Node", data: { x: p.x, y: p.y } },
-      ]); */
+      ]);
     }
     if (hit instanceof NodeEntity) {
       this.context.events.emit("setContextMenu", [
@@ -162,9 +162,7 @@ export class SelectionTool implements Tool {
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     const v = new Vector(e.wX, e.wY);
     if (e.button == MouseButton.RIGHT) {
-      if (hit) {
-        this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
-      }
+      this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
     } else {
       this.context.events.emit("closeModal");
     }

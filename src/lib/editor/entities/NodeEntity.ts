@@ -33,7 +33,8 @@ export type Connector = {
 };
 
 export enum NodeType {
-  IO,
+  INPUT,
+  OUTPUT,
   NODE,
 }
 
@@ -203,6 +204,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   config: NodeConfig;
   design: NodeDesign;
   outputsId: Record<string, number>;
+  inputsId: Record<string, number>;
 
   public _cells: number[] = [];
   public _lastCol?: number;
@@ -217,6 +219,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.zIndex = 2;
     this.collider = new BoxCollider(this.width, this.height, new Vector());
     this.outputsId = {};
+    this.inputsId = {};
   }
 
   protected onInit(): void {
@@ -234,7 +237,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     for (const name in this.config.connectors) {
       const connector = this.config.connectors[name];
       if (connector.type == ConnectorType.OUTPUT) {
-        this.outputsId[name] = this.context.memory.register();
+        this.outputsId[name] = this.context.simulator.memory.register();
       }
     }
   }
@@ -458,6 +461,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     }
     this.context.grid.registerEntity(this);
   }
+
   protected onMouseHover(e: EngineMouseEvent): boolean | void {
     this.context.mouse.cursor = "pointer";
   }
@@ -481,9 +485,18 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     };
     this.draw();
   }
+
   protected onMouseLeave(e: EngineMouseEvent): boolean | void {
     this.activeConnector = undefined;
     this.draw();
     this.context.mouse.cursor = "default";
+  }
+
+  public getInfo(): {
+    type: number;
+    output: number[];
+    input: number[];
+  } {
+    return { type: 0, output: [], input: [] };
   }
 }

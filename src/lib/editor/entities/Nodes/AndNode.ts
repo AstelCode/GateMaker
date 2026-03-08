@@ -6,6 +6,7 @@ import {
   NodeType,
   type NodeConfig,
 } from "../NodeEntity";
+import { Nodes } from "./Nodes";
 const { LEFT, RIGHT } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
 export class AndNode extends NodeEntity {
@@ -27,6 +28,18 @@ export class AndNode extends NodeEntity {
     super();
     this.name = "AND";
     this.config = AndNode.config;
+  }
+
+  public getInfo(): {
+    type: number;
+    output: number[];
+    input: number[];
+  } {
+    return {
+      type: Nodes.AND,
+      output: Object.values(this.outputsId),
+      input: Object.values(this.inputsId),
+    };
   }
 }
 NodeRegister.registerNode(AndNode);

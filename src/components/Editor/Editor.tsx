@@ -3,6 +3,7 @@ import { createApp, destroyApp, type AppInfo } from "../../lib/editor";
 import { ComponentsCatalog } from "./ComponentsCatalog";
 import { EditorContext } from "./useEditor";
 import { ContextMenu } from "./ContextMenu";
+import { SimulationControls } from "./SimulationControls";
 
 export const Editor = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -36,6 +37,7 @@ export const Editor = () => {
       <div className="w-screen h-screen" ref={ref}>
         <ContextMenu />
         <ComponentsCatalog />
+        <SimulationControls />
       </div>
     </EditorContext.Provider>
   );

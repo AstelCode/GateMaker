@@ -6,6 +6,7 @@ import {
   NodeType,
   type NodeConfig,
 } from "../NodeEntity";
+import { Nodes } from "./Nodes";
 const { LEFT, RIGHT } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
 export class OrNode extends NodeEntity {
@@ -27,6 +28,17 @@ export class OrNode extends NodeEntity {
     super();
     this.name = "OR";
     this.config = OrNode.config;
+  }
+  public getInfo(): {
+    type: number;
+    output: number[];
+    input: number[];
+  } {
+    return {
+      type: Nodes.OR,
+      output: Object.values(this.outputsId),
+      input: Object.values(this.inputsId),
+    };
   }
 }
 

@@ -18,8 +18,8 @@ import { Wire, AndNode, NodeEntity, SwitchNode } from "./entities";
 import { NodeRegister } from "./NodeRegister";
 import { Memory } from "./simlulator/Memory";
 import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
+import { Simulator } from "./simlulator/Simulator";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface Providers {
   componentCatalog: { name: string; src: string }[];
 }
@@ -31,8 +31,11 @@ interface Events {
   closeModal: any;
   contextOptionSelected: any;
 
-  //closeComponentCatalog: { x: number; y: number };
   onComponentSelected: { name: string };
+  openComponentCatalog: any;
+
+  startSimulation: any;
+  stopSimulation: any;
 
   [T: `context_${string}`]: any;
 }
@@ -41,7 +44,7 @@ export interface AppContext {
   grid: Grid;
   camera: Camera;
   tools: ToolManager;
-  memory: Memory;
+  simulator: Simulator;
 }
 
 export type AppProviders = Providers & DefaultProvider;
@@ -58,6 +61,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
   grid!: Grid;
   camera!: Camera;
   tools!: ToolManager;
+  simualtor!: Simulator;
 
   g!: Graphics;
   protected background: number = 0xf6f8fb;
@@ -95,6 +99,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.grid = new Grid();
     this.camera = new Camera(this.grid, this.world);
     this.tools = new ToolManager();
+    this.simualtor = new Simulator(this.world);
   }
 
   protected async onInitTextures(): Promise<void> {
@@ -108,12 +113,16 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       if (this.world.hasInteraction()) {
         if (this.world.onMouseDown(e)) return;
       }
-      this.tools.onDown(e, hit as any);
+      if (!this.simualtor.started) {
+        this.tools.onDown(e, hit as any);
+      }
     });
 
     this.mouse.on(MouseEventType.DRAG, (e) => {
       this.camera.onDrag(e);
-      this.tools.onDrag(e);
+      if (!this.simualtor.started) {
+        this.tools.onDrag(e);
+      }
     });
 
     this.mouse.on(MouseEventType.MOVE, (e) => {
@@ -121,14 +130,18 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       if (this.world.hasInteraction()) {
         if (this.world.onMove(e)) return;
       }
-      this.tools.onMove(e);
+      if (!this.simualtor.started) {
+        this.tools.onMove(e);
+      }
     });
 
     this.mouse.on(MouseEventType.UP, (e) => {
       if (this.world.hasInteraction()) {
         if (this.world.onMouseUp(e)) return;
       }
-      this.tools.onUp(e);
+      if (!this.simualtor.started) {
+        this.tools.onUp(e);
+      }
     });
 
     this.mouse.on(MouseEventType.WHEEL, (e) => {
@@ -149,12 +162,16 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.events.on("context_route", (wire: Wire[]) => {
       wire.forEach((wire) => wire.recalc());
     });
+    this.events.on("context_add", () => {
+      this.events.emit("openComponentCatalog");
+    });
 
     this.events.on("onComponentSelected", (data) => {
       this.tools.restore();
       this.tools.use("add-node");
       const tool = this.tools.getTool("add-node") as AddNodeTool;
       const node = new (NodeRegister.get(data.name)!)();
+      node.select();
       node.visible = false;
       tool.hit = node;
       this.world.addChild(node);
@@ -166,6 +183,18 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
         src: this.assets.get(name).src,
       }));
     });
+
+    this.events.on("startSimulation", () => {
+      this.context.simulator.start();
+    });
+
+    this.events.on("stopSimulation", () => {
+      this.context.simulator.stop();
+    });
+  }
+
+  protected onUpdate(delta: number): void {
+    this.simualtor.loop();
   }
 
   protected createContext(): AppEngineContext {
@@ -175,7 +204,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       grid: this.grid,
       camera: this.camera,
       tools: this.tools,
-      memory: new Memory(),
+      simulator: this.simualtor,
     };
   }
 

@@ -7,7 +7,11 @@ import {
   type EngineMouseEvent,
 } from "../core";
 import { Grid } from "../Grid";
-import { ConnectorDirection, type NodeEntity } from "./NodeEntity";
+import {
+  ConnectorDirection,
+  ConnectorType,
+  type NodeEntity,
+} from "./NodeEntity";
 import type { AppContext, AppEvents, AppProviders } from "../App";
 import { WireRouter } from "../WireRouter";
 import { SelectionBox } from "./SelectionBox";
@@ -32,8 +36,10 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   public completed: boolean;
   public selected: boolean = false;
   public activeIdx: number = -1;
+  public memId: number;
 
   private g: Graphics;
+  private activeStateLayer: Graphics;
 
   constructor() {
     super();
@@ -44,7 +50,10 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.endPos = new Vector();
     this.completed = false;
     this.g = new Graphics();
+    this.activeStateLayer = new Graphics();
+    this.memId = -1;
     this.addChild(this.g);
+    this.addChild(this.activeStateLayer);
   }
 
   public init(): void {
@@ -58,12 +67,45 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.context.grid.unregisterWire(this);
   }
 
-  private drawPath() {
+  private drawPath(g = this.g) {
     for (let i = 0; i < this.path.length; i++) {
       const p = this.path[i];
-      if (i == 0) this.g.moveTo(p.x, p.y);
-      else this.g.lineTo(p.x, p.y);
+      if (i == 0) g.moveTo(p.x, p.y);
+      else g.lineTo(p.x, p.y);
     }
+  }
+  private active: boolean = false;
+  public update(_delta: number): void {
+    if (this.context.simulator.started) {
+      if (this.context.simulator.memory.get(this.memId)) {
+        if (!this.active) {
+          this.drawWireState();
+          this.active = true;
+        }
+      } else {
+        if (this.active) {
+          this.activeStateLayer.clear();
+          this.active = false;
+        }
+      }
+    } else {
+      if (this.active) {
+        this.activeStateLayer.clear();
+        this.active = false;
+      }
+    }
+  }
+
+  private drawWireState() {
+    this.activeStateLayer.clear();
+    this.activeStateLayer.beginPath();
+    this.drawPath(this.activeStateLayer);
+    this.activeStateLayer.stroke({
+      color: "#F57F7F",
+      width: Wire.lineHeight - 3,
+      cap: "round",
+      join: "round",
+    });
   }
 
   public select() {
@@ -177,6 +219,19 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.recalc();
     this.points.length = 0;
     this.forceLayoutUpdate();
+
+    if (
+      this.startNode.node.getConnectorInfo(this.startNode.pin).type ==
+      ConnectorType.INPUT
+    ) {
+      const id = this.endNode.node.outputsId[this.endNode.pin];
+      this.memId = id;
+      this.startNode.node.inputsId[this.startNode.pin] = this.memId;
+    } else {
+      const id = this.startNode.node.outputsId[this.startNode.pin];
+      this.memId = id;
+      this.endNode.node.inputsId[this.endNode.pin] = this.memId;
+    }
   }
 
   public addPoint(pos: Vector) {

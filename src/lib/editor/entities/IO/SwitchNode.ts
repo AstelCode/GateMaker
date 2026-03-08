@@ -22,7 +22,7 @@ export class SwitchNode extends NodeEntity {
     showConnectorLabel: false,
     showLabel: false,
     nodeName: "SWITCH",
-    type: NodeType.NODE,
+    type: NodeType.INPUT,
     colSpan: 1,
     rowSpan: 1,
     connectors: {
@@ -92,10 +92,16 @@ export class SwitchNode extends NodeEntity {
 
   protected onMouseDown(e: EngineMouseEvent): boolean | void {
     if (this.selected) return;
-    /*     if (this.interactionBox?.pointInside(new Vector(e.wX, e.wY))) {
+    if (this.interactionBox?.pointInside(new Vector(e.wX, e.wY))) {
       this.active = !this.active;
+      if (this.active) {
+        this.context.simulator.memory.set(this.outputsId["A"], 1);
+      } else {
+        this.context.simulator.memory.set(this.outputsId["A"], 0);
+      }
       this.drawControl();
-    } */
+      return true;
+    }
   }
 }
 NodeRegister.registerNode(SwitchNode);

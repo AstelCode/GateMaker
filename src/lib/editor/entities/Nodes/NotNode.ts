@@ -6,6 +6,7 @@ import {
   NodeType,
   type NodeConfig,
 } from "../NodeEntity";
+import { Nodes } from "./Nodes";
 const { LEFT, RIGHT } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
 export class NotNode extends NodeEntity {
@@ -26,6 +27,17 @@ export class NotNode extends NodeEntity {
     super();
     this.name = "NOT";
     this.config = NotNode.config;
+  }
+  public getInfo(): {
+    type: number;
+    output: number[];
+    input: number[];
+  } {
+    return {
+      type: Nodes.NOT,
+      output: Object.values(this.outputsId),
+      input: Object.values(this.inputsId),
+    };
   }
 }
 NodeRegister.registerNode(NotNode);

@@ -22,7 +22,7 @@ export class LedNode extends NodeEntity {
     showConnectorLabel: false,
     showLabel: false,
     nodeName: "LED",
-    type: NodeType.NODE,
+    type: NodeType.OUTPUT,
     colSpan: 1,
     rowSpan: 1,
     connectors: {
@@ -84,6 +84,20 @@ export class LedNode extends NodeEntity {
     this.interactionBox = new BoxCollider(20, 20);
     this.drawControl();
     this.forceLayoutUpdate();
+  }
+  private prevValue: number = 0;
+  public update(_delta: number): void {
+    if (this.inputsId["A"] == undefined) return;
+    const value = this.context.simulator.memory.get(this.inputsId["A"]);
+    if (this.prevValue != value) {
+      if (value) {
+        this.active = true;
+      } else {
+        this.active = false;
+      }
+      this.drawControl();
+      this.prevValue = value;
+    }
   }
 
   protected onMouseDown(e: EngineMouseEvent): boolean | void {}
