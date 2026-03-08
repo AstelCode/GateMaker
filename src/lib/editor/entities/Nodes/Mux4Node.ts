@@ -8,12 +8,12 @@ import {
 } from "../NodeEntity";
 const { LEFT, RIGHT, TOP } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
-export class MuxNode extends NodeEntity {
-  static name: string = "MUX";
+export class Mux4Node extends NodeEntity {
+  static name: string = "MUX4";
   static config: NodeConfig = {
     showConnectorLabel: true,
     showLabel: true,
-    nodeName: "MUX",
+    nodeName: "MUX4",
     type: NodeType.NODE,
     colSpan: 4,
     rowSpan: 4,
@@ -29,8 +29,8 @@ export class MuxNode extends NodeEntity {
   };
   constructor() {
     super();
-    this.name = "MUX";
-    this.config = MuxNode.config;
+    this.name = "MUX4";
+    this.config = Mux4Node.config;
   }
 }
-NodeRegister.registerNode(MuxNode);
+NodeRegister.registerNode(Mux4Node);

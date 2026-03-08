@@ -52,8 +52,8 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   public delete() {
-    this.startNode.node.deleteWire(this.startNode.pin);
-    this.endNode.node.deleteWire(this.startNode.pin);
+    this.startNode.node.deleteWire(this.startNode.pin, this);
+    this.endNode.node.deleteWire(this.endNode.pin, this);
     this.parent?.removeChild(this);
     this.context.grid.unregisterWire(this);
   }

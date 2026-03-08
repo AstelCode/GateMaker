@@ -6,7 +6,7 @@ import {
   type EngineMouseEvent,
   type Entity,
 } from "../../core";
-import { NodeEntity } from "../../entities/NodeEntity";
+import { ConnectorType, NodeEntity } from "../../entities/NodeEntity";
 import { Wire } from "../../entities/Wire";
 import type { Tool } from "../ToolManager";
 
@@ -29,6 +29,18 @@ export class CreateWireTool implements Tool {
     return this.completed;
   }
 
+  validConector(
+    node: NodeEntity,
+    wire: Wire,
+    name: string,
+    connectorType: ConnectorType,
+  ) {
+    const nodeConector = wire.startNode.node.getConnectorInfo(
+      wire.startNode.pin,
+    );
+    return nodeConector?.type != connectorType && node.isValidConnector(name);
+  }
+
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     if (e.button == MouseButton.LEFT) {
       if (hit instanceof NodeEntity) {
@@ -48,15 +60,15 @@ export class CreateWireTool implements Tool {
             this.completed = false;
           } else {
             if (this.current.startNode.node.id == hit.id) return;
-            /*         if (
+            if (
               !this.validConector(
-                node,
+                hit,
                 this.current,
                 connector.name!,
                 connector.connectorType!,
               )
             )
-              return; */
+              return;
             this.completed = true;
             this.current.endWire(
               hit,

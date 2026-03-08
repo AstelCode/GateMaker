@@ -4,7 +4,6 @@ import type { DefaultEvents, DefaultProvider, EngineContext } from "./Engine";
 import { AABB } from "./AABB/AABB";
 import { uuid } from "./utils/uuid";
 import type { Collider } from "./colliders/ICollider";
-import type { Vector } from "./math/Vector";
 import type { BoxCollider } from "./colliders/BoxCollider";
 import type { EngineMouseEvent } from "./controllers/MouseController";
 
@@ -19,12 +18,21 @@ export class Entity<
   public collider?: Collider;
   public bounding?: AABB;
   public interactionBox?: BoxCollider;
+  public selected: boolean = false;
 
   constructor() {
     super();
     this.id = uuid();
     this.eventMode = "none";
     this.dirtyLayout = true;
+  }
+
+  public select() {
+    this.selected = true;
+  }
+
+  public unSelect() {
+    this.selected = false;
   }
 
   public update(_delta: number) {

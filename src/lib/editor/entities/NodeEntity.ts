@@ -199,8 +199,10 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   name: string = "";
   sprite!: Sprite;
-  g!: Graphics;
+  connectorGraphics!: Graphics;
   config: NodeConfig;
+  design: NodeDesign;
+  outputsId: Record<string, number>;
 
   public _cells: number[] = [];
   public _lastCol?: number;
@@ -211,21 +213,30 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     super();
     this.name = "AND";
     this.config = NodeEntity.config!;
+    this.design = NodeEntity.design!;
     this.zIndex = 2;
     this.collider = new BoxCollider(this.width, this.height, new Vector());
+    this.outputsId = {};
   }
 
   protected onInit(): void {
     this.sprite = new Sprite(this.context.assets.get(this.name).texture);
-    this.g = new Graphics();
+    this.connectorGraphics = new Graphics();
     this.sprite.anchor.set(0.5);
     const cs = Grid.cellSize;
     this.position.x += this.config.colSpan % 2 == 1 ? cs / 2 : 0;
     this.position.y += this.config.rowSpan % 2 == 1 ? cs / 2 : 0;
     this.addChild(this.sprite);
-    this.addChild(this.g);
+    this.addChild(this.connectorGraphics);
     this.markDirty();
     this.context.grid.registerEntity(this);
+
+    for (const name in this.config.connectors) {
+      const connector = this.config.connectors[name];
+      if (connector.type == ConnectorType.OUTPUT) {
+        this.outputsId[name] = this.context.memory.register();
+      }
+    }
   }
 
   public testHit(p: Vector) {
@@ -235,7 +246,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
       tolerance,
       margin,
       connectorHeight: ch,
-    } = NodeEntity.design!;
+    } = this.design;
     const cs = Grid.cellSize;
 
     const center = new Vector(this.position.x, this.position.y);
@@ -307,9 +318,13 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     return undefined;
   }
 
+  public getConnectorInfo(name: string) {
+    return this.config.connectors[name];
+  }
+
   public getConnectorPos(name: string) {
     const { rowSpan, colSpan } = this.config!;
-    const { margin, connectorHeight: ch } = NodeEntity.design!;
+    const { margin, connectorHeight: ch } = this.design;
     const { TOP, BOTTOM } = ConnectorDirection;
     const cs = Grid.cellSize;
     const center = new Vector(this.position.x, this.position.y);
@@ -357,13 +372,14 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   public isValidConnector(name: string) {
+    if (this.config.connectors[name].type == ConnectorType.OUTPUT) return true;
     if (!this.wires[name]) return true;
     return this.wires[name].length == 0;
   }
 
   protected updateCollider(): void {
     const { rowSpan, colSpan } = this.config;
-    const { margin } = NodeEntity.design;
+    const { margin } = this.design;
     const cs = Grid.cellSize;
     const w = cs * colSpan + margin * 2;
     const h = cs * rowSpan + margin * 2;
@@ -374,8 +390,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     );
   }
 
-  public deleteWire(startPin: string) {
-    delete this.wires[startPin];
+  public deleteWire(pin: string, wire: Wire) {
+    if (!this.wires[pin]) return;
+    this.wires[pin] = this.wires[pin].filter((item) => item.wire != wire);
   }
 
   public setWirePos(name: string, wire: Wire, pos: Vector) {
@@ -405,13 +422,13 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   };
 
   public draw() {
-    this.g.clear();
+    this.connectorGraphics.clear();
     if (!this.activeConnector) return;
     const { x, y, direction } = this.activeConnector;
-    const { connectorWidth: cw, connectorHeight: ch } = NodeEntity.design;
+    const { connectorWidth: cw, connectorHeight: ch } = this.design;
     const { HORIZONTAL, VERTICAL, LEFT, TOP } = ConnectorDirection;
     if (direction & HORIZONTAL) {
-      this.g.roundRect(
+      this.connectorGraphics.roundRect(
         x - this.position.x - ch + (direction & LEFT ? 6 : 4),
         y - this.position.y - cw / 2,
         ch,
@@ -420,7 +437,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
       );
     }
     if (direction & VERTICAL) {
-      this.g.roundRect(
+      this.connectorGraphics.roundRect(
         x - this.position.x - cw / 2,
         y - this.position.y + (direction & TOP ? -4 : -6),
         cw,
@@ -428,7 +445,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
         3,
       );
     }
-    this.g.fill({ color: "#646484" });
+    this.connectorGraphics.fill({ color: "#646484" });
   }
 
   protected onDirty(): void {
@@ -446,6 +463,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   protected onMouseMove(e: EngineMouseEvent): boolean | void {
+    if (this.selected) return;
     const connector = this.testHit(new Vector(e.wX, e.wY));
     if (!connector) {
       this.activeConnector = undefined;

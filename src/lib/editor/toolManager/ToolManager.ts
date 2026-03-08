@@ -60,6 +60,10 @@ export class ToolManager {
     this.current = null;
   }
 
+  getTool(name: string) {
+    return this.registry.get(name);
+  }
+
   tryActivate(e: EngineMouseEvent, hit?: AppEntity) {
     if (this.current) return;
     for (const tool of this.sorted) {

@@ -14,11 +14,15 @@ import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
 
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
-import { Wire, AndNode, NodeEntity } from "./entities";
+import { Wire, AndNode, NodeEntity, SwitchNode } from "./entities";
 import { NodeRegister } from "./NodeRegister";
+import { Memory } from "./simlulator/Memory";
+import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Providers {}
+interface Providers {
+  componentCatalog: { name: string; src: string }[];
+}
 interface Events {
   restoreTool: any;
 
@@ -27,10 +31,8 @@ interface Events {
   closeModal: any;
   contextOptionSelected: any;
 
-  setComponentCatalog: { name: string; src: string }[];
-  openComponentCatalog: { x: number; y: number };
-  closeComponentCatalog: { x: number; y: number };
-  onComponentSelected: { name: string; x: number; y: number };
+  //closeComponentCatalog: { x: number; y: number };
+  onComponentSelected: { name: string };
 
   [T: `context_${string}`]: any;
 }
@@ -39,6 +41,7 @@ export interface AppContext {
   grid: Grid;
   camera: Camera;
   tools: ToolManager;
+  memory: Memory;
 }
 
 export type AppProviders = Providers & DefaultProvider;
@@ -71,8 +74,9 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.tools.register(new SelectionTool());
     this.tools.register(new CreateWireTool());
     this.tools.register(new EditWireTool());
+    this.tools.register(new AddNodeTool());
 
-    const node = new AndNode();
+    const node = new SwitchNode();
     this.world.addChild(node);
     const node1 = new AndNode();
     node1.position.x += 400;
@@ -146,14 +150,21 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       wire.forEach((wire) => wire.recalc());
     });
 
-    this.events.on("context_add", (data) => {
-      this.events.emit("openComponentCatalog", data);
-    });
     this.events.on("onComponentSelected", (data) => {
+      this.tools.restore();
+      this.tools.use("add-node");
+      const tool = this.tools.getTool("add-node") as AddNodeTool;
       const node = new (NodeRegister.get(data.name)!)();
-      node.position.set(data.x, data.y);
+      node.visible = false;
+      tool.hit = node;
       this.world.addChild(node);
-      AndNode.adjustPos(node);
+    });
+
+    this.providers.send("componentCatalog", () => {
+      return NodeRegister.getNames().map((name) => ({
+        name,
+        src: this.assets.get(name).src,
+      }));
     });
   }
 
@@ -164,20 +175,14 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       grid: this.grid,
       camera: this.camera,
       tools: this.tools,
+      memory: new Memory(),
     };
   }
 
   public getEvents() {
     return this.events;
   }
-
-  public startUI() {
-    this.events.emit(
-      "setComponentCatalog",
-      NodeRegister.getNames().map((name) => ({
-        name,
-        src: this.assets.get(name).src,
-      })),
-    );
+  public getProviders() {
+    return this.providers;
   }
 }

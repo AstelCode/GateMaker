@@ -33,7 +33,7 @@ export class SelectionTool implements Tool {
   activeWires = new Map<string, Wire>();
   bothSelectedWires: Set<Wire> = new Set();
 
-  activeWire?: Wire;
+  activeEntity?: AppEntity;
 
   //#region block tools
   IsValid(e: EngineMouseEvent, hit?: AppEntity): boolean {
@@ -41,6 +41,12 @@ export class SelectionTool implements Tool {
     if (e.button == MouseButton.MIDDLE) return false;
     if (!hit) return true;
     if (hit instanceof NodeEntity) {
+      /*  if (
+        hit.interactionBox &&
+        hit.interactionBox.pointInside(new Vector(e.wX, e.wY))
+      ) {
+        return false;
+      } */
       const result = hit.testHit(new Vector(e.wX, e.wY));
       return result?.type === "box";
     }
@@ -105,9 +111,9 @@ export class SelectionTool implements Tool {
 
   updateContextMenu(hit: Container | undefined, p: Vector) {
     if (!hit) {
-      this.context.events.emit("setContextMenu", [
+      /*      this.context.events.emit("setContextMenu", [
         { id: "add", name: "Add Node", data: { x: p.x, y: p.y } },
-      ]);
+      ]); */
     }
     if (hit instanceof NodeEntity) {
       this.context.events.emit("setContextMenu", [
@@ -156,7 +162,9 @@ export class SelectionTool implements Tool {
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
     const v = new Vector(e.wX, e.wY);
     if (e.button == MouseButton.RIGHT) {
-      this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
+      if (hit) {
+        this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
+      }
     } else {
       this.context.events.emit("closeModal");
     }
@@ -190,7 +198,7 @@ export class SelectionTool implements Tool {
           return;
         }
       }
-
+      hit.selected = true;
       this.updateContextMenu(hit, new Vector(e.wX, e.wY));
       this.selection.length = 0;
       this.selection.push(hit);
@@ -198,13 +206,14 @@ export class SelectionTool implements Tool {
       this.active = true;
       this.isWire = hit instanceof Wire;
 
-      if (this.activeWire && hit != this.activeWire) {
-        this.activeWire.unSelect();
+      if (this.activeEntity && hit != this.activeEntity) {
+        this.activeEntity.unSelect();
       }
-      if (hit instanceof Wire) {
-        this.activeWire = hit;
-        hit.select();
-      }
+
+      // if (hit instanceof Wire) {
+      this.activeEntity = hit;
+      hit.select();
+      // }
       this.draggingSelection = !this.isWire;
       this.context.mouse.cursor = "pointer";
       this.wireSelectionOnly = this.isWire;
@@ -214,13 +223,14 @@ export class SelectionTool implements Tool {
     }
 
     for (const item of this.selection) {
-      if (item instanceof Wire) {
-        item.unSelect();
-      }
+      //item.selected = false;
+      // if (item instanceof Wire) {
+      item.unSelect();
+      //}
     }
-    if (this.activeWire) {
-      this.activeWire.unSelect();
-      this.activeWire = undefined;
+    if (this.activeEntity) {
+      this.activeEntity.unSelect();
+      this.activeEntity = undefined;
     }
     this.updateContextMenu(undefined, new Vector(e.wX, e.wY));
     this.active = false;
@@ -282,7 +292,6 @@ export class SelectionTool implements Tool {
 
   onUp(e: EngineMouseEvent): void {
     if (e.button !== MouseButton.LEFT) return;
-    //this.context.mouse.cursor = "default";
 
     this.box.updateBounding();
 
@@ -308,8 +317,9 @@ export class SelectionTool implements Tool {
     }
 
     if (!this.draggingSelection) {
-      for (const item of this.selection)
-        if (item instanceof Wire) item.unSelect();
+      for (const item of this.selection) {
+        item.unSelect();
+      }
 
       this.selection.length = 0;
       this.selection = this.findSelection();
@@ -320,8 +330,9 @@ export class SelectionTool implements Tool {
         this.active = false;
       } else {
         this.active = true;
-        for (const item of this.selection)
-          if (item instanceof Wire) item.select();
+        for (const item of this.selection) {
+          item.select();
+        }
         this.box.calcBounding(this.selection);
       }
     }
@@ -363,6 +374,7 @@ export class SelectionTool implements Tool {
       }
     }
   }
+
   destroy(): void {
     this.context.world.removeChild(this.box);
   }

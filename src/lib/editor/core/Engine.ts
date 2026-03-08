@@ -132,6 +132,7 @@ export class Engine<
     this.providers.clear();
     window.removeEventListener("resize", this.resizeCallback);
     this.app.destroy(true, { children: true, texture: true });
+    this.container.removeChild(this.app.canvas);
   }
 
   protected getContext() {
