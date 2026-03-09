@@ -65,22 +65,29 @@ export class Simulator {
     for (const item of this.grapth) {
       if (item.type == Nodes.AND) {
         if (item.input.length == 2) {
-          const a = this.memory.get(item.input[0]);
-          const b = this.memory.get(item.input[1]);
-          this.memory.set(item.output[0], a & b);
+          const a = this.memory.getBit(item.input[0], 0);
+          const b = this.memory.getBit(item.input[1], 0);
+          this.memory.setBit(item.output[0], 0, a & b & 1);
+        }
+      }
+      if (item.type == Nodes.NAND) {
+        if (item.input.length == 2) {
+          const a = this.memory.getBit(item.input[0], 0);
+          const b = this.memory.getBit(item.input[1], 0);
+          this.memory.setBit(item.output[0], 0, ~(a & b) & 1);
         }
       }
       if (item.type == Nodes.OR) {
         if (item.input.length == 2) {
-          const a = this.memory.get(item.input[0]);
-          const b = this.memory.get(item.input[1]);
-          this.memory.set(item.output[0], a | b);
+          const a = this.memory.getBit(item.input[0], 0);
+          const b = this.memory.getBit(item.input[1], 0);
+          this.memory.setBit(item.output[0], 0, (a | b) & 1);
         }
       }
       if (item.type == Nodes.NOT) {
         if (item.input.length == 1) {
-          const a = this.memory.get(item.input[0]);
-          this.memory.set(item.output[0], ~a);
+          const a = this.memory.getBit(item.input[0], 0);
+          this.memory.setBit(item.output[0], 0, ~a & 1);
         }
       }
     }

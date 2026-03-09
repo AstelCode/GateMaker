@@ -16,7 +16,6 @@ import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
 import { Wire, AndNode, NodeEntity, SwitchNode } from "./entities";
 import { NodeRegister } from "./NodeRegister";
-import { Memory } from "./simlulator/Memory";
 import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
 import { Simulator } from "./simlulator/Simulator";
 
@@ -160,8 +159,13 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     });
 
     this.events.on("context_route", (wire: Wire[]) => {
-      wire.forEach((wire) => wire.recalc());
+      wire.forEach((wire) => {
+        wire.recalc();
+        wire.unSelect();
+        wire.unSelectSegment();
+      });
     });
+
     this.events.on("context_add", () => {
       this.events.emit("openComponentCatalog");
     });
@@ -185,6 +189,8 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     });
 
     this.events.on("startSimulation", () => {
+      (this.tools.getTool("selection") as SelectionTool).unSelect();
+      this.tools.restore();
       this.context.simulator.start();
     });
 
@@ -193,7 +199,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     });
   }
 
-  protected onUpdate(delta: number): void {
+  protected onUpdate(): void {
     this.simualtor.loop();
   }
 

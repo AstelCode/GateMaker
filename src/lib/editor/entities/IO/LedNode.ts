@@ -67,14 +67,6 @@ export class LedNode extends NodeEntity {
     this.graphis.clear();
     this.graphis.roundRect(-15, -15, 30, 30, 6);
     this.graphis.fill({ color: this.active ? "#FF9090" : "#ffffff" });
-    /*     if (this.active) {
-      this.graphis.roundRect(5, -15, 10, 30, 6);
-      this.graphis.fill({ color: "#000000" });
-    } else {
-      this.graphis.roundRect(-15, -15, 10, 30, 6);
-
-      this.graphis.fill({ color: "#000000" });
-    } */
     this.graphis.roundRect(-15, -15, 30, 30, 6);
     this.graphis.stroke({ color: "#585858", width: 2 });
   }
@@ -86,7 +78,14 @@ export class LedNode extends NodeEntity {
     this.forceLayoutUpdate();
   }
   private prevValue: number = 0;
-  public update(_delta: number): void {
+  public onUpdate(_delta: number): void {
+    /*     if (!this.context.simulator.started) {
+      if (this.active) {
+        this.active = false;
+        this.drawControl();
+      }
+      return;
+    } */
     if (this.inputsId["A"] == undefined) return;
     const value = this.context.simulator.memory.get(this.inputsId["A"]);
     if (this.prevValue != value) {

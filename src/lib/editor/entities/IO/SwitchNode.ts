@@ -1,10 +1,5 @@
 import { Graphics } from "pixi.js";
-import {
-  BoxCollider,
-  Vector,
-  type EngineMouseEvent,
-  type TextureGenerator,
-} from "../../core";
+import { BoxCollider, type TextureGenerator } from "../../core";
 import { NodeRegister } from "../../NodeRegister";
 import {
   ConnectorDirection,
@@ -14,8 +9,8 @@ import {
   type NodeConfig,
   type NodeDesign,
 } from "../NodeEntity";
-const { LEFT, RIGHT } = ConnectorDirection;
-const { INPUT, OUTPUT } = ConnectorType;
+const { RIGHT } = ConnectorDirection;
+const { OUTPUT } = ConnectorType;
 export class SwitchNode extends NodeEntity {
   static name: string = "SWITCH";
   static config: NodeConfig = {
@@ -90,18 +85,17 @@ export class SwitchNode extends NodeEntity {
     this.forceLayoutUpdate();
   }
 
-  protected onMouseDown(e: EngineMouseEvent): boolean | void {
+  protected onMouseDown(): boolean | void {
     if (this.selected) return;
-    if (this.interactionBox?.pointInside(new Vector(e.wX, e.wY))) {
-      this.active = !this.active;
-      if (this.active) {
-        this.context.simulator.memory.set(this.outputsId["A"], 1);
-      } else {
-        this.context.simulator.memory.set(this.outputsId["A"], 0);
-      }
-      this.drawControl();
-      return true;
+    if (!this.context.simulator.started) return;
+    this.active = !this.active;
+    if (this.active) {
+      this.context.simulator.memory.set(this.outputsId["A"], 1);
+    } else {
+      this.context.simulator.memory.set(this.outputsId["A"], 0);
     }
+    this.drawControl();
+    return true;
   }
 }
 NodeRegister.registerNode(SwitchNode);

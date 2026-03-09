@@ -4,7 +4,6 @@ import {
   createText,
   Entity,
   Vector,
-  type EngineContext,
   type EngineMouseEvent,
   type TextureGenerator,
 } from "../core";
@@ -395,15 +394,21 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   public deleteWire(pin: string, wire: Wire) {
     if (!this.wires[pin]) return;
+    if (this.config.connectors[pin].type == ConnectorType.INPUT) {
+      delete this.inputsId[pin];
+    }
     this.wires[pin] = this.wires[pin].filter((item) => item.wire != wire);
   }
 
-  public setWirePos(name: string, wire: Wire, pos: Vector) {
+  public connectWire(name: string, wire: Wire, pos: Vector) {
     this.wires[name] ??= [];
     this.wires[name].push({ wire, pos });
   }
 
   public delete() {
+    Object.values(this.outputsId).map((item) => {
+      this.context.simulator.memory.delete(item);
+    });
     this.getConnectedWires().forEach((wire) => wire.delete());
     this.context.grid.unregisterEntity(this);
     this.destroy();

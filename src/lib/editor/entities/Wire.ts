@@ -75,28 +75,29 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     }
   }
   private active: boolean = false;
-  public update(_delta: number): void {
+
+  public onUpdate(): void {
     if (this.context.simulator.started) {
       if (this.context.simulator.memory.get(this.memId)) {
         if (!this.active) {
-          this.drawWireState();
           this.active = true;
+          this.draw();
         }
       } else {
         if (this.active) {
-          this.activeStateLayer.clear();
           this.active = false;
+          this.draw();
         }
       }
     } else {
-      if (this.active) {
-        this.activeStateLayer.clear();
+      /* if (this.active) {
         this.active = false;
-      }
+        this.draw();
+      } */
     }
   }
 
-  private drawWireState() {
+  /* private drawWireState() {
     this.activeStateLayer.clear();
     this.activeStateLayer.beginPath();
     this.drawPath(this.activeStateLayer);
@@ -106,7 +107,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       cap: "round",
       join: "round",
     });
-  }
+  } */
 
   public select() {
     this.selected = true;
@@ -147,7 +148,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.drawPath();
     if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
     this.g.stroke({
-      color: 0xffffff,
+      color: this.active ? "#F57F7F" : "#ffffff",
       join: "round",
       cap: "round",
       width: Wire.lineHeight - 3,
@@ -211,8 +212,8 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   ) {
     this.endNode = { node, pin: name, position: pos, direction };
     this.endPos.set(pos);
-    this.endNode.node.setWirePos(this.endNode.pin, this, this.endPos);
-    this.startNode.node.setWirePos(this.startNode.pin, this, this.startPos);
+    this.endNode.node.connectWire(this.endNode.pin, this, this.endPos);
+    this.startNode.node.connectWire(this.startNode.pin, this, this.startPos);
     this.points.push(this.endPos);
     this.path.push(this.endPos);
     this.completed = true;
@@ -366,10 +367,10 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       }
 
       // Dirección final solo en el último tramo
-      let endDir: Vector | undefined;
+      /*       let endDir: Vector | undefined;
       if (i === this.points.length - 2) {
         endDir = new Vector(to.x < this.endNode.position.x ? -1 : 1, 0);
-      }
+      } */
 
       const segment = WireRouter.route(
         this.context.grid,
@@ -381,7 +382,6 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
 
       if (segment.length === 0) continue;
 
-      // Evitar duplicar el punto de unión
       if (i > 0) segment.shift();
 
       fullPath.push(...segment);
@@ -396,7 +396,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     const simplified = WireRouter.simplifyPath(fullPath);
     this.path.length = 0;
     for (const p of simplified) this.path.push(p);
-    this.markDirty();
+    this.forceLayoutUpdate();
   }
 
   static adjustPoint(p: Vector) {
@@ -416,7 +416,12 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
 
   //#endregion
 
-  protected onMouseHover(e: EngineMouseEvent): boolean | void {
+  public unSelectSegment() {
+    this.activeIdx = -1;
+    this.draw();
+  }
+
+  protected onMouseHover(): boolean | void {
     if (this.activeIdx != -1) {
       this.context.mouse.cursor = "pointer";
       this.draw();
@@ -425,13 +430,14 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     }
   }
 
-  protected onMouseLeave(e: EngineMouseEvent): boolean | void {
+  protected onMouseLeave(): boolean | void {
     this.context.mouse.cursor = "default";
     this.activeIdx = -1;
     this.draw();
   }
 
   protected onMouseMove(e: EngineMouseEvent): boolean | void {
+    if (this.context.simulator.started) return;
     const p = new Vector(e.wX, e.wY);
     this.activeIdx = this.getSegment(p);
     if (this.activeIdx != -1) {

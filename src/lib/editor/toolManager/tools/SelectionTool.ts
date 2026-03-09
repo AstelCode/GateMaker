@@ -41,12 +41,12 @@ export class SelectionTool implements Tool {
     if (e.button == MouseButton.MIDDLE) return false;
     if (!hit) return true;
     if (hit instanceof NodeEntity) {
-      if (
+      /*       if (
         hit.interactionBox &&
         hit.interactionBox.pointInside(new Vector(e.wX, e.wY))
       ) {
         return false;
-      }
+      } */
       const result = hit.testHit(new Vector(e.wX, e.wY));
       return result?.type === "box";
     }
@@ -54,7 +54,7 @@ export class SelectionTool implements Tool {
     return false;
   }
 
-  IsUnlock(e: EngineMouseEvent, hit?: AppEntity): boolean {
+  IsUnlock(): boolean {
     return false;
   }
   //#endregion
@@ -208,10 +208,8 @@ export class SelectionTool implements Tool {
         this.activeEntity.unSelect();
       }
 
-      // if (hit instanceof Wire) {
       this.activeEntity = hit;
       hit.select();
-      // }
       this.draggingSelection = !this.isWire;
       this.context.mouse.cursor = "pointer";
       this.wireSelectionOnly = this.isWire;
@@ -238,6 +236,9 @@ export class SelectionTool implements Tool {
     this.selectedNodes.length = 0;
     this.selectedWires.length = 0;
     this.box.setStart(v);
+  }
+  unSelect() {
+    this.selection.forEach((item) => item.unSelect());
   }
 
   onDrag(e: EngineMouseEvent): void {
@@ -338,7 +339,7 @@ export class SelectionTool implements Tool {
     this.draggingSelection = false;
   }
 
-  onOutside(e: EngineMouseEvent): void {
+  onOutside(): void {
     //e.button = MouseButton.LEFT;
     //this.onUp(e);
   }
