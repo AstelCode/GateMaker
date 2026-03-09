@@ -21,7 +21,7 @@ export class SwitchNode extends NodeEntity {
     colSpan: 1,
     rowSpan: 1,
     connectors: {
-      A: { direction: RIGHT, idx: 0, type: OUTPUT },
+      A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1 },
     },
   };
   static design: NodeDesign = {
@@ -90,9 +90,9 @@ export class SwitchNode extends NodeEntity {
     if (!this.context.simulator.started) return;
     this.active = !this.active;
     if (this.active) {
-      this.context.simulator.memory.set(this.outputsId["A"], 1);
+      this.context.simulator.memory.set(this.outputsAddress["A"], 1);
     } else {
-      this.context.simulator.memory.set(this.outputsId["A"], 0);
+      this.context.simulator.memory.set(this.outputsAddress["A"], 0);
     }
     this.drawControl();
     return true;

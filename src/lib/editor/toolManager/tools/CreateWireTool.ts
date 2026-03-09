@@ -34,11 +34,16 @@ export class CreateWireTool implements Tool {
     wire: Wire,
     name: string,
     connectorType: ConnectorType,
+    size: number,
   ) {
     const nodeConector = wire.startNode.node.getConnectorInfo(
       wire.startNode.pin,
     );
-    return nodeConector?.type != connectorType && node.isValidConnector(name);
+    return (
+      nodeConector?.type != connectorType &&
+      node.isValidConnector(name) &&
+      size == wire.size
+    );
   }
 
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
@@ -55,6 +60,7 @@ export class CreateWireTool implements Tool {
               connector.name!,
               pos,
               connector.direction!,
+              hit.config.connectors[connector.name!].size,
             );
             this.context.world.addChild(this.current);
             this.completed = false;
@@ -66,9 +72,11 @@ export class CreateWireTool implements Tool {
                 this.current,
                 connector.name!,
                 connector.connectorType!,
+                hit.config.connectors[connector.name!].size,
               )
             )
               return;
+
             this.completed = true;
             this.current.endWire(
               hit,

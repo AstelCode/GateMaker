@@ -108,7 +108,7 @@ export class Engine<
     this.app.ticker.add(() => {
       this.stats.update();
     });
-    this.container.appendChild(this.stats.dom);
+    //this.container.appendChild(this.stats.dom);
   }
 
   async create() {

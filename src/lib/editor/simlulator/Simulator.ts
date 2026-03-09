@@ -1,19 +1,16 @@
 import type { Container } from "pixi.js";
-import { NodeEntity, Nodes, NodeType } from "../entities";
+import { NodeEntity, NodeType } from "../entities";
 import { Memory } from "./Memory";
+import { Gate, type Operation } from "../entities/gates/Gate";
 
 export class Simulator {
   public memory: Memory;
   public started: boolean;
-  private grapth: {
-    type: number;
-    output: number[];
-    input: number[];
-  }[];
+  private operations: Operation[];
   constructor(private world: Container) {
     this.started = false;
     this.memory = new Memory();
-    this.grapth = [];
+    this.operations = [];
   }
 
   createGrapth() {
@@ -51,43 +48,51 @@ export class Simulator {
 
     startedNodes.forEach((node) => traveler(node));
 
-    this.grapth = Array.from(memory.values())
+    this.operations = Array.from(memory.values())
       .filter(
         (item) =>
           item.node.config.type != NodeType.INPUT &&
-          item.node.config.type != NodeType.OUTPUT,
+          item.node.config.type != NodeType.OUTPUT &&
+          item.node instanceof Gate,
       )
       .sort((a, b) => a.idx - b.idx)
-      .map((item) => item.node.getInfo());
+      .map((item) => (item.node as Gate).getOperations())
+      .flat();
   }
 
   exectute() {
-    for (const item of this.grapth) {
-      if (item.type == Nodes.AND) {
-        if (item.input.length == 2) {
-          const a = this.memory.getBit(item.input[0], 0);
-          const b = this.memory.getBit(item.input[1], 0);
-          this.memory.setBit(item.output[0], 0, a & b & 1);
+    for (const operation of this.operations) {
+      if (operation.type == "SET") {
+        for (let i = 0; i < operation.inputs.length; i++) {
+          const a = this.memory.getBit(operation.inputs[i], 0);
+          this.memory.setBit(operation.outputs[i], 0, a & 1);
         }
       }
-      if (item.type == Nodes.NAND) {
-        if (item.input.length == 2) {
-          const a = this.memory.getBit(item.input[0], 0);
-          const b = this.memory.getBit(item.input[1], 0);
-          this.memory.setBit(item.output[0], 0, ~(a & b) & 1);
+      if (operation.type == "AND") {
+        if (operation.inputs.length == 2) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          const b = this.memory.getBit(operation.inputs[1], 0);
+          this.memory.setBit(operation.outputs[0], 0, a & b & 1);
         }
       }
-      if (item.type == Nodes.OR) {
-        if (item.input.length == 2) {
-          const a = this.memory.getBit(item.input[0], 0);
-          const b = this.memory.getBit(item.input[1], 0);
-          this.memory.setBit(item.output[0], 0, (a | b) & 1);
+      if (operation.type == "NAND") {
+        if (operation.inputs.length == 2) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          const b = this.memory.getBit(operation.inputs[1], 0);
+          this.memory.setBit(operation.outputs[0], 0, ~(a & b) & 1);
         }
       }
-      if (item.type == Nodes.NOT) {
-        if (item.input.length == 1) {
-          const a = this.memory.getBit(item.input[0], 0);
-          this.memory.setBit(item.output[0], 0, ~a & 1);
+      if (operation.type == "OR") {
+        if (operation.inputs.length == 2) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          const b = this.memory.getBit(operation.inputs[1], 0);
+          this.memory.setBit(operation.outputs[0], 0, (a | b) & 1);
+        }
+      }
+      if (operation.type == "NOT") {
+        if (operation.inputs.length == 1) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          this.memory.setBit(operation.outputs[0], 0, ~a & 1);
         }
       }
     }

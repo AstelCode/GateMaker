@@ -28,7 +28,7 @@ interface Events {
   setContextMenu: { name: string; id: string; data: any; color?: string }[];
   openContextMenu: { x: number; y: number };
   closeModal: any;
-  contextOptionSelected: any;
+  contextOptionSelected: string;
 
   onComponentSelected: { name: string };
   openComponentCatalog: any;
@@ -79,11 +79,11 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.tools.register(new EditWireTool());
     this.tools.register(new AddNodeTool());
 
-    const node = new SwitchNode();
+    /*     const node = new SwitchNode();
     this.world.addChild(node);
     const node1 = new AndNode();
     node1.position.x += 400;
-    this.world.addChild(node1);
+    this.world.addChild(node1); */
 
     this.g = new Graphics();
     this.g.beginPath();
@@ -151,7 +151,11 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       this.tools.onOutside(e);
     });
 
-    this.events.on("contextOptionSelected", () => this.context.tools.restore());
+    this.events.on("contextOptionSelected", (id) => {
+      if (id != "copy") {
+        this.context.tools.restore();
+      }
+    });
 
     this.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
       data.forEach((data) => data.delete());
@@ -174,7 +178,8 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       this.tools.restore();
       this.tools.use("add-node");
       const tool = this.tools.getTool("add-node") as AddNodeTool;
-      const node = new (NodeRegister.get(data.name)!)();
+      const node = NodeRegister.get(data.name);
+      if (!node) return;
       node.select();
       node.visible = false;
       tool.hit = node;

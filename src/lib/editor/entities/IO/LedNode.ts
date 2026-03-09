@@ -26,7 +26,7 @@ export class LedNode extends NodeEntity {
     colSpan: 1,
     rowSpan: 1,
     connectors: {
-      A: { direction: LEFT, idx: 0, type: INPUT },
+      A: { direction: LEFT, idx: 0, type: INPUT, size: 1 },
     },
   };
   static design: NodeDesign = {
@@ -86,8 +86,8 @@ export class LedNode extends NodeEntity {
       }
       return;
     } */
-    if (this.inputsId["A"] == undefined) return;
-    const value = this.context.simulator.memory.get(this.inputsId["A"]);
+    if (this.inputsAddress["A"] == undefined) return;
+    const value = this.context.simulator.memory.get(this.inputsAddress["A"]);
     if (this.prevValue != value) {
       if (value) {
         this.active = true;

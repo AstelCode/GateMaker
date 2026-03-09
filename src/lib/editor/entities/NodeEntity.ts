@@ -29,6 +29,8 @@ export type Connector = {
   idx: number;
   direction: ConnectorDirection;
   type: ConnectorType;
+  size: number;
+  address: number;
 };
 
 export enum NodeType {
@@ -63,7 +65,7 @@ const directionMap: Record<number, Vector> = {
   [ConnectorDirection.BOTTOM]: new Vector(0, 1),
 };
 
-function createTexture(
+export function createNodeTexture(
   name: string,
   config: NodeConfig,
   design: NodeDesign,
@@ -166,6 +168,7 @@ function createTexture(
 
   return [func];
 }
+
 export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   static name: string;
 
@@ -183,7 +186,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   static config: NodeConfig;
 
   static loadTextures(): TextureGenerator[] {
-    return createTexture(this.name, this.config!, this.design);
+    return createNodeTexture(this.name, this.config!, this.design);
   }
 
   static adjustPos(node: NodeEntity) {
@@ -202,8 +205,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   connectorGraphics!: Graphics;
   config: NodeConfig;
   design: NodeDesign;
-  outputsId: Record<string, number>;
-  inputsId: Record<string, number>;
+
+  outputsAddress: Record<string, number>;
+  inputsAddress: Record<string, number>;
 
   public _cells: number[] = [];
   public _lastCol?: number;
@@ -217,8 +221,8 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.design = NodeEntity.design!;
     this.zIndex = 2;
     this.collider = new BoxCollider(this.width, this.height, new Vector());
-    this.outputsId = {};
-    this.inputsId = {};
+    this.outputsAddress = {};
+    this.inputsAddress = {};
   }
 
   protected onInit(): void {
@@ -232,11 +236,14 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.addChild(this.connectorGraphics);
     this.markDirty();
     this.context.grid.registerEntity(this);
+    this.createOutputsId();
+  }
 
+  protected createOutputsId() {
     for (const name in this.config.connectors) {
       const connector = this.config.connectors[name];
       if (connector.type == ConnectorType.OUTPUT) {
-        this.outputsId[name] = this.context.simulator.memory.register();
+        this.outputsAddress[name] = this.context.simulator.memory.register();
       }
     }
   }
@@ -395,7 +402,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   public deleteWire(pin: string, wire: Wire) {
     if (!this.wires[pin]) return;
     if (this.config.connectors[pin].type == ConnectorType.INPUT) {
-      delete this.inputsId[pin];
+      delete this.inputsAddress[pin];
     }
     this.wires[pin] = this.wires[pin].filter((item) => item.wire != wire);
   }
@@ -406,7 +413,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   public delete() {
-    Object.values(this.outputsId).map((item) => {
+    Object.values(this.outputsAddress).map((item) => {
       this.context.simulator.memory.delete(item);
     });
     this.getConnectedWires().forEach((wire) => wire.delete());
@@ -497,11 +504,11 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.context.mouse.cursor = "default";
   }
 
-  public getInfo(): {
+  /*  public getInfo(): {
     type: number;
     output: number[];
     input: number[];
   } {
     return { type: 0, output: [], input: [] };
-  }
+  } */
 }

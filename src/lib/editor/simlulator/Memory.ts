@@ -1,10 +1,10 @@
 export class Memory {
-  private memory: Uint32Array;
+  private memory: Uint16Array;
   private freeMemory: number[];
   private currentId: number;
 
-  constructor() {
-    this.memory = new Uint32Array(1024);
+  constructor(size = 1024) {
+    this.memory = new Uint16Array(size);
     this.freeMemory = [];
     this.currentId = 0;
   }
@@ -13,14 +13,21 @@ export class Memory {
     return this.memory;
   }
 
-  register() {
+  register(size: number = 1) {
+    if (size > 1) {
+      if (size + this.currentId > this.memory.length) {
+        throw new Error("Memory overflow");
+      }
+      const id = this.currentId;
+      this.currentId += size;
+      return id;
+    }
     const id = this.freeMemory.pop() ?? this.currentId++;
     if (id >= this.memory.length) {
       throw new Error("Memory overflow");
     }
     return id;
   }
-
   delete(id: number) {
     this.freeMemory.push(id);
     this.memory[id] = 0;

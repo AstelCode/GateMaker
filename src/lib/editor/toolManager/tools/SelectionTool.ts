@@ -112,11 +112,17 @@ export class SelectionTool implements Tool {
   updateContextMenu(hit: Container | undefined, p: Vector) {
     if (!hit) {
       this.context.events.emit("setContextMenu", [
-        { id: "add", name: "Add Node", data: { x: p.x, y: p.y } },
+        { id: "add", name: "Add", data: { x: p.x, y: p.y } },
+        { id: "pase", name: "Pase", data: { x: p.x, y: p.y } },
       ]);
     }
     if (hit instanceof NodeEntity) {
       this.context.events.emit("setContextMenu", [
+        {
+          id: "copy",
+          name: "Copy",
+          data: [hit],
+        },
         {
           id: "delete",
           name: "Delete",
@@ -134,6 +140,11 @@ export class SelectionTool implements Tool {
     if (hit instanceof SelectionBox) {
       if (this.selection.find((item) => item instanceof NodeEntity)) {
         this.context.events.emit("setContextMenu", [
+          {
+            id: "copy",
+            name: "Copy",
+            data: this.selection.slice(),
+          },
           {
             id: "delete",
             name: "Delete",

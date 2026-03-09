@@ -37,6 +37,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   public selected: boolean = false;
   public activeIdx: number = -1;
   public memId: number;
+  public size: number;
 
   private g: Graphics;
   private activeStateLayer: Graphics;
@@ -54,6 +55,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.memId = -1;
     this.addChild(this.g);
     this.addChild(this.activeStateLayer);
+    this.size = 0;
   }
 
   public init(): void {
@@ -89,25 +91,8 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
           this.draw();
         }
       }
-    } else {
-      /* if (this.active) {
-        this.active = false;
-        this.draw();
-      } */
     }
   }
-
-  /* private drawWireState() {
-    this.activeStateLayer.clear();
-    this.activeStateLayer.beginPath();
-    this.drawPath(this.activeStateLayer);
-    this.activeStateLayer.stroke({
-      color: "#F57F7F",
-      width: Wire.lineHeight - 3,
-      cap: "round",
-      join: "round",
-    });
-  } */
 
   public select() {
     this.selected = true;
@@ -196,12 +181,14 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     name: string,
     pos: Vector,
     direction: ConnectorDirection,
+    size: number,
   ) {
     this.startNode = { node, pin: name, position: pos, direction };
     this.startPos.set(pos);
     this.endPos.set(pos);
     this.path.push(this.startPos);
     this.points.push(this.startPos);
+    this.size = size;
   }
 
   public endWire(
@@ -225,13 +212,13 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       this.startNode.node.getConnectorInfo(this.startNode.pin).type ==
       ConnectorType.INPUT
     ) {
-      const id = this.endNode.node.outputsId[this.endNode.pin];
+      const id = this.endNode.node.outputsAddress[this.endNode.pin];
       this.memId = id;
-      this.startNode.node.inputsId[this.startNode.pin] = this.memId;
+      this.startNode.node.inputsAddress[this.startNode.pin] = this.memId;
     } else {
-      const id = this.startNode.node.outputsId[this.startNode.pin];
+      const id = this.startNode.node.outputsAddress[this.startNode.pin];
       this.memId = id;
-      this.endNode.node.inputsId[this.endNode.pin] = this.memId;
+      this.endNode.node.inputsAddress[this.endNode.pin] = this.memId;
     }
   }
 

@@ -38,7 +38,7 @@ export const ContextMenu = () => {
   const onClick = (id: string, data: any) => {
     if (!app) return;
     app.engine.getEvents().emit(`context_${id}`, data);
-    app.engine.getEvents().emit(`contextOptionSelected`);
+    app.engine.getEvents().emit(`contextOptionSelected`, id);
     setContextMenu((prev) => ({ ...prev, isOpen: false }));
   };
 
@@ -49,7 +49,7 @@ export const ContextMenu = () => {
         top: contextMenu.position!.y,
         display: contextMenu.isOpen ? "block" : "none",
       }}
-      className="absolute w-30   top-25 left-25 border border-gray-700 bg-white rounded-sm overflow-hidden"
+      className="absolute w-20   top-25 left-25 border border-gray-700 bg-white rounded-sm overflow-hidden"
       onContextMenu={(e) => e.preventDefault()}
     >
       {contextMenu.options.map((option) => (
