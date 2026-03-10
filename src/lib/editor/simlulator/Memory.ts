@@ -48,6 +48,7 @@ export class Memory {
   }
 
   getBit(id: number, bit: number) {
+    if (id == -1) return 0;
     return (this.memory[id] >> bit) & 1;
   }
 

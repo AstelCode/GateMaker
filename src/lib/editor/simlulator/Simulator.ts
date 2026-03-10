@@ -69,49 +69,65 @@ export class Simulator {
         }
       }
       if (operation.type == "AND") {
-        if (operation.inputs.length == 2) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          const b = this.memory.getBit(operation.inputs[1], 0);
-          this.memory.setBit(operation.outputs[0], 0, a & b & 1);
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, a & b & 1);
       }
       if (operation.type == "NAND") {
-        if (operation.inputs.length == 2) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          const b = this.memory.getBit(operation.inputs[1], 0);
-          this.memory.setBit(operation.outputs[0], 0, ~(a & b) & 1);
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, ~(a & b) & 1);
       }
       if (operation.type == "OR") {
-        if (operation.inputs.length == 2) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          const b = this.memory.getBit(operation.inputs[1], 0);
-          this.memory.setBit(operation.outputs[0], 0, (a | b) & 1);
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, (a | b) & 1);
       }
       if (operation.type == "NOR") {
-        if (operation.inputs.length == 2) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          const b = this.memory.getBit(operation.inputs[1], 0);
-          this.memory.setBit(operation.outputs[0], 0, ~(a | b) & 1);
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, ~(a | b) & 1);
       }
       if (operation.type == "XOR") {
-        if (operation.inputs.length == 2) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          const b = this.memory.getBit(operation.inputs[1], 0);
-          this.memory.setBit(
-            operation.outputs[0],
-            0,
-            ((~a & b) | (a & ~b)) & 1,
-          );
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, ((~a & b) | (a & ~b)) & 1);
       }
       if (operation.type == "NOT") {
-        if (operation.inputs.length == 1) {
-          const a = this.memory.getBit(operation.inputs[0], 0);
-          this.memory.setBit(operation.outputs[0], 0, ~a & 1);
-        }
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        this.memory.setBit(operation.outputs[0], 0, ~a & 1);
+      }
+      if (operation.type == "Spli2") {
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[0], 1);
+        this.memory.setBit(operation.outputs[0], 0, a & 1);
+        this.memory.setBit(operation.outputs[1], 0, b & 1);
+      }
+      if (operation.type == "Spli4") {
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[0], 1);
+        const c = this.memory.getBit(operation.inputs[0], 2);
+        const d = this.memory.getBit(operation.inputs[0], 3);
+        this.memory.setBit(operation.outputs[0], 0, a & 1);
+        this.memory.setBit(operation.outputs[1], 0, b & 1);
+        this.memory.setBit(operation.outputs[2], 0, c & 1);
+        this.memory.setBit(operation.outputs[3], 0, d & 1);
+      }
+      if (operation.type == "Conb2") {
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        this.memory.setBit(operation.outputs[0], 0, a & 1);
+        this.memory.setBit(operation.outputs[0], 1, b & 1);
+      }
+      if (operation.type == "Conb4") {
+        const a = this.memory.getBit(operation.inputs[0], 0);
+        const b = this.memory.getBit(operation.inputs[1], 0);
+        const c = this.memory.getBit(operation.inputs[2], 0);
+        const d = this.memory.getBit(operation.inputs[3], 0);
+        this.memory.setBit(operation.outputs[0], 0, a & 1);
+        this.memory.setBit(operation.outputs[0], 1, b & 1);
+        this.memory.setBit(operation.outputs[0], 2, c & 1);
+        this.memory.setBit(operation.outputs[0], 3, d & 1);
       }
     }
   }

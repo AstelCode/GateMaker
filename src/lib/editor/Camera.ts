@@ -3,7 +3,7 @@ import type { Grid } from "./Grid";
 import { MouseButton, type EngineMouseEvent } from "./core";
 
 export class Camera {
-  minZoom: number = 0.5;
+  minZoom: number = 0.3;
   maxZoom: number = 1.8;
 
   constructor(

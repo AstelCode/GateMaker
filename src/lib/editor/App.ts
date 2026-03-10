@@ -8,17 +8,16 @@ import {
   type EngineContext,
 } from "./core/Engine";
 import { Grid } from "./Grid";
-
 import { ToolManager } from "./toolManager/ToolManager";
 import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
-
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
-import { Wire, NodeEntity } from "./entities";
+import { Wire, NodeEntity, InputNode, OutputNode } from "./entities";
 import { NodeRegister } from "./NodeRegister";
 import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
 import { Simulator } from "./simlulator/Simulator";
 import { ClipboardManager } from "./Clipboard";
+
 interface Providers {
   componentCatalog: { name: string; src: string }[];
 }
@@ -35,6 +34,9 @@ interface Events {
 
   startSimulation: any;
   stopSimulation: any;
+
+  openRename: string;
+  getNewName: string;
 
   [T: `context_${string}`]: any;
 }
@@ -213,6 +215,16 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
 
     this.events.on("stopSimulation", () => {
       this.context.simulator.stop();
+    });
+    let renameHit: InputNode | OutputNode;
+    this.events.on("context_rename", (hit) => {
+      renameHit = hit.selection[0] as InputNode | OutputNode;
+      this.events.emit("openRename", renameHit.getName());
+    });
+
+    this.events.on("getNewName", (name) => {
+      if (!renameHit) return;
+      renameHit.rename(name);
     });
   }
 

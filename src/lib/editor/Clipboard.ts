@@ -47,7 +47,7 @@ export class ClipboardManager {
         wireJson.startPin,
       );
       const endNode = mem.get(wireJson.endId)! as NodeEntity;
-      const { info: endInfo, posititon: endPos } = startNode.getConnector(
+      const { info: endInfo, posititon: endPos } = endNode.getConnector(
         wireJson.endPin,
       );
       const wire = new Wire();

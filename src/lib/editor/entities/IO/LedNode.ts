@@ -26,7 +26,7 @@ export class LedNode extends NodeEntity {
     colSpan: 1,
     rowSpan: 1,
     connectors: {
-      A: { direction: LEFT, idx: 0, type: INPUT, size: 1 },
+      A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
     },
   };
   static design: NodeDesign = {

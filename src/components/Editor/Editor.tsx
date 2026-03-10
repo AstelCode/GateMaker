@@ -4,6 +4,7 @@ import { ComponentsCatalog } from "./ComponentsCatalog";
 import { EditorContext } from "./useEditor";
 import { ContextMenu } from "./ContextMenu";
 import { SimulationControls } from "./SimulationControls";
+import { RenameControl } from "./RenameControl";
 
 export const Editor = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -38,6 +39,7 @@ export const Editor = () => {
         <ContextMenu />
         <ComponentsCatalog />
         <SimulationControls />
+        <RenameControl />
       </div>
     </EditorContext.Provider>
   );

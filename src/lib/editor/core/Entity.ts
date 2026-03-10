@@ -121,6 +121,9 @@ export class Entity<
   public _mouseClick(e: EngineMouseEvent): boolean | void {
     return this.onMouseClick?.(e);
   }
+  public _mouseDoubleClick(e: EngineMouseEvent): boolean | void {
+    return this.onMouseDoubleClick?.(e);
+  }
   public _mouseWheel(e: EngineMouseEvent): boolean | void {
     return this.onMouseWheel?.(e);
   }
@@ -136,6 +139,7 @@ export class Entity<
   protected onMouseDown?(e: EngineMouseEvent): boolean | void;
   protected onMouseUp?(e: EngineMouseEvent): boolean | void;
   protected onMouseClick?(e: EngineMouseEvent): boolean | void;
+  protected onMouseDoubleClick?(e: EngineMouseEvent): boolean | void;
   protected onMouseMove?(e: EngineMouseEvent): boolean | void;
   protected onMouseLeave?(e: EngineMouseEvent): boolean | void;
 

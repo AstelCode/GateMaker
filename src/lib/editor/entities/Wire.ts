@@ -141,8 +141,9 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.g.beginPath();
     this.drawPath();
     if (!this.completed) this.g.lineTo(this.endPos.x, this.endPos.y);
+
     this.g.stroke({
-      color: this.active ? "#F57F7F" : "#ffffff",
+      color: this.size > 1 ? "#6262E9" : this.active ? "#F57F7F" : "#ffffff",
       join: "round",
       cap: "round",
       width: Wire.lineHeight - 3,

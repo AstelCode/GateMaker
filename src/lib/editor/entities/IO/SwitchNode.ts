@@ -21,7 +21,7 @@ export class SwitchNode extends NodeEntity {
     colSpan: 1,
     rowSpan: 1,
     connectors: {
-      A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1 },
+      A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1, address: 0 },
     },
   };
   static design: NodeDesign = {

@@ -62,20 +62,21 @@ export const ComponentsCatalog = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        <div className="px-5 min-w-80 w-80  grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]   content-start gap-10 h-[calc(100%-80px)]">
-          {filteredItems.map((item) => (
-            <div
-              className="cursor-pointer w-30 h-33 rounded-[10px] flex flex-col items-center justify-between hover:bg-stone-100 hover:border duration-75 py-1"
-              onClick={() => onClick?.(item.name)}
-              key={item.name}
-            >
-              <div className="w-20 h-20 grid place-content-center">
-                <img src={item.src} width={70} />
+        <div className="w-full h-[calc(100%-80px)] verflow-y-scroll overflow-x-hidden">
+          <div className="px-5 min-w-80 w-80 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]   content-start gap-10 h-[calc(100%-80px)]">
+            {filteredItems.map((item) => (
+              <div
+                className="cursor-pointer w-30 h-33 rounded-[10px] flex flex-col items-center justify-between hover:bg-stone-100 hover:border duration-75 py-1"
+                onClick={() => onClick?.(item.name)}
+                key={item.name}
+              >
+                <div className="w-20 h-20 grid place-content-center">
+                  <img src={item.src} width={70} />
+                </div>
+                <span>{item.name}</span>
               </div>
-              <span>{item.name}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </>

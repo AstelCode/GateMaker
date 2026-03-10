@@ -58,6 +58,11 @@ export class World extends Container {
     return this.hit._mouseDown(e);
   }
 
+  public onMouseDoubleClick(e: EngineMouseEvent) {
+    if (!this.hit) return;
+    return this.hit._mouseDoubleClick(e);
+  }
+
   public onMouseUp(e: EngineMouseEvent) {
     if (!this.hit) return;
     return this.hit._mouseUp(e);

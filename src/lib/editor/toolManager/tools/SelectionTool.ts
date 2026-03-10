@@ -11,6 +11,7 @@ import { NodeEntity } from "../../entities/NodeEntity";
 import { SelectionBox } from "../../entities/SelectionBox";
 import { Wire } from "../../entities/Wire";
 import type { Container } from "pixi.js";
+import { InputNode, OutputNode } from "../../entities";
 
 export class SelectionTool implements Tool {
   priority: number = 0;
@@ -41,12 +42,6 @@ export class SelectionTool implements Tool {
     if (e.button == MouseButton.MIDDLE) return false;
     if (!hit) return true;
     if (hit instanceof NodeEntity) {
-      /*       if (
-        hit.interactionBox &&
-        hit.interactionBox.pointInside(new Vector(e.wX, e.wY))
-      ) {
-        return false;
-      } */
       const result = hit.testHit(new Vector(e.wX, e.wY));
       return result?.type === "box";
     }
@@ -110,76 +105,68 @@ export class SelectionTool implements Tool {
   }
 
   updateContextMenu(hit: Container | undefined, p: Vector) {
+    const options: { id: string; name: string; data: any; color?: string }[] =
+      [];
     if (!hit) {
       if (this.context.clipboard.hasData()) {
-        this.context.events.emit("setContextMenu", [
-          { id: "add", name: "Add", data: { x: p.x, y: p.y } },
-          { id: "pase", name: "Pase", data: { x: p.x, y: p.y } },
-        ]);
-      } else {
-        this.context.events.emit("setContextMenu", [
-          { id: "add", name: "Add", data: { x: p.x, y: p.y } },
-        ]);
+        options.push({ id: "pase", name: "Pase", data: { x: p.x, y: p.y } });
       }
+      options.push({ id: "add", name: "Add", data: { x: p.x, y: p.y } });
     }
+
+    if (hit instanceof InputNode || hit instanceof OutputNode) {
+      options.push({
+        id: "rename",
+        name: "Rename",
+        data: {
+          selection: [hit],
+          position: { x: p.x, y: p.y },
+        },
+      });
+    }
+
     if (hit instanceof NodeEntity) {
-      this.context.events.emit("setContextMenu", [
-        {
+      options.push({
+        id: "copy",
+        name: "Copy",
+        data: {
+          selection: [hit],
+          position: { x: p.x, y: p.y },
+        },
+      });
+    }
+    if (hit instanceof Wire) {
+      options.push({ id: "route", name: "Route", data: [hit] });
+    }
+
+    if (hit instanceof SelectionBox) {
+      if (this.selection.find((item) => item instanceof NodeEntity)) {
+        options.push({
           id: "copy",
           name: "Copy",
           data: {
-            selection: [hit],
+            selection: this.selection.slice(),
             position: { x: p.x, y: p.y },
           },
-        },
-        {
-          id: "delete",
-          name: "Delete",
-          color: "red",
-          data: [hit],
-        },
-      ]);
-    }
-    if (hit instanceof Wire) {
-      this.context.events.emit("setContextMenu", [
-        { id: "route", name: "Route", data: [hit] },
-        { id: "delete", name: "Delete", color: "red", data: [hit] },
-      ]);
-    }
-    if (hit instanceof SelectionBox) {
-      if (this.selection.find((item) => item instanceof NodeEntity)) {
-        this.context.events.emit("setContextMenu", [
-          {
-            id: "copy",
-            name: "Copy",
-            data: {
-              selection: this.selection.slice(),
-              position: { x: p.x, y: p.y },
-            },
-          },
-          {
-            id: "delete",
-            name: "Delete",
-            color: "red",
-            data: this.selection.slice(),
-          },
-        ]);
+        });
       } else {
-        this.context.events.emit("setContextMenu", [
-          {
-            id: "route",
-            name: "Route",
-            data: this.selection.slice(),
-          },
-          {
-            id: "delete",
-            name: "Delete",
-            color: "red",
-            data: this.selection.slice(),
-          },
-        ]);
+        options.push({
+          id: "route",
+          name: "Route",
+          data: this.selection.slice(),
+        });
       }
     }
+
+    if (hit) {
+      options.push({
+        id: "delete",
+        name: "Delete",
+        color: "red",
+        data: hit instanceof SelectionBox ? this.selection.slice() : [hit],
+      });
+    }
+    this.context.events.emit("setContextMenu", options);
   }
 
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {
@@ -259,6 +246,7 @@ export class SelectionTool implements Tool {
     this.selectedWires.length = 0;
     this.box.setStart(v);
   }
+
   unSelect() {
     this.selection.forEach((item) => item.unSelect());
   }
