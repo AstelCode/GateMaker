@@ -58,6 +58,12 @@ export interface NodeDesign {
   tolerance: number;
 }
 
+export interface NodeJson {
+  type: "gate";
+  id: string;
+  name: string;
+  position: Vector;
+}
 const directionMap: Record<number, Vector> = {
   [ConnectorDirection.LEFT]: new Vector(-1, 0),
   [ConnectorDirection.RIGHT]: new Vector(1, 0),
@@ -331,6 +337,13 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     return this.config.connectors[name];
   }
 
+  public getConnector(name: string) {
+    return {
+      posititon: this.getConnectorPos(name),
+      info: this.config.connectors[name],
+    };
+  }
+
   public getConnectorPos(name: string) {
     const { rowSpan, colSpan } = this.config!;
     const { margin, connectorHeight: ch } = this.design;
@@ -511,4 +524,13 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   } {
     return { type: 0, output: [], input: [] };
   } */
+
+  public toJson(): NodeJson {
+    return {
+      type: "gate",
+      id: this.id,
+      name: this.config.nodeName,
+      position: new Vector(this.position),
+    };
+  }
 }

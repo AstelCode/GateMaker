@@ -1,3 +1,4 @@
+import { Vector } from "../../core";
 import { NodeRegister } from "../../NodeRegister";
 import type { Memory } from "../../simlulator/Memory";
 import {

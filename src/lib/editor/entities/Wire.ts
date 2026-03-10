@@ -23,6 +23,15 @@ interface NodeInfo {
   direction: ConnectorDirection;
 }
 
+export interface WireJson {
+  type: "wire";
+  startId: string;
+  startPin: string;
+  endId: string;
+  endPin: string;
+  path: Vector[];
+}
+
 export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
   static lineHeight: number = 12;
   static padding: number = 15;
@@ -196,6 +205,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     name: string,
     pos: Vector,
     direction: ConnectorDirection,
+    recalc: boolean = true,
   ) {
     this.endNode = { node, pin: name, position: pos, direction };
     this.endPos.set(pos);
@@ -204,9 +214,11 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
     this.points.push(this.endPos);
     this.path.push(this.endPos);
     this.completed = true;
-    this.recalc();
-    this.points.length = 0;
-    this.forceLayoutUpdate();
+    if (recalc) {
+      this.recalc();
+      this.points.length = 0;
+      this.forceLayoutUpdate();
+    }
 
     if (
       this.startNode.node.getConnectorInfo(this.startNode.pin).type ==
@@ -433,5 +445,28 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       this.context.mouse.cursor = "default";
     }
     this.draw();
+  }
+
+  public setPath(path: Vector[]) {
+    this.points.length = 0;
+    this.path.length = 0;
+    this.path.push(this.startPos);
+    this.startPos.set(path[0]);
+    for (let i = 1; i < path.length - 1; i++) {
+      this.path.push(path[i]);
+    }
+    this.endPos.set(path[path.length - 1]);
+    this.path.push(this.endPos);
+  }
+
+  public toJson(): WireJson {
+    return {
+      type: "wire",
+      startId: this.startNode.node.id,
+      startPin: this.startNode.pin,
+      endId: this.endNode.node.id,
+      endPin: this.endNode.pin,
+      path: this.path.map((item) => item.clone()),
+    };
   }
 }

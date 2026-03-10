@@ -111,17 +111,26 @@ export class SelectionTool implements Tool {
 
   updateContextMenu(hit: Container | undefined, p: Vector) {
     if (!hit) {
-      this.context.events.emit("setContextMenu", [
-        { id: "add", name: "Add", data: { x: p.x, y: p.y } },
-        { id: "pase", name: "Pase", data: { x: p.x, y: p.y } },
-      ]);
+      if (this.context.clipboard.hasData()) {
+        this.context.events.emit("setContextMenu", [
+          { id: "add", name: "Add", data: { x: p.x, y: p.y } },
+          { id: "pase", name: "Pase", data: { x: p.x, y: p.y } },
+        ]);
+      } else {
+        this.context.events.emit("setContextMenu", [
+          { id: "add", name: "Add", data: { x: p.x, y: p.y } },
+        ]);
+      }
     }
     if (hit instanceof NodeEntity) {
       this.context.events.emit("setContextMenu", [
         {
           id: "copy",
           name: "Copy",
-          data: [hit],
+          data: {
+            selection: [hit],
+            position: { x: p.x, y: p.y },
+          },
         },
         {
           id: "delete",
@@ -143,7 +152,10 @@ export class SelectionTool implements Tool {
           {
             id: "copy",
             name: "Copy",
-            data: this.selection.slice(),
+            data: {
+              selection: this.selection.slice(),
+              position: { x: p.x, y: p.y },
+            },
           },
           {
             id: "delete",
@@ -230,15 +242,14 @@ export class SelectionTool implements Tool {
     }
 
     for (const item of this.selection) {
-      //item.selected = false;
-      // if (item instanceof Wire) {
       item.unSelect();
-      //}
     }
+
     if (this.activeEntity) {
       this.activeEntity.unSelect();
       this.activeEntity = undefined;
     }
+
     this.updateContextMenu(undefined, new Vector(e.wX, e.wY));
     this.active = false;
     this.draggingSelection = false;

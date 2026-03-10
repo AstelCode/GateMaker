@@ -34,6 +34,34 @@ NodeRegister.registerGate({
 NodeRegister.registerGate({
   showConnectorLabel: true,
   showLabel: true,
+  nodeName: "NOR",
+  type: NodeType.NODE,
+  colSpan: 3,
+  rowSpan: 3,
+  connectors: {
+    A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
+    B: { direction: LEFT, idx: 2, type: INPUT, size: 1, address: 1 },
+    C: { direction: RIGHT, idx: 1, type: OUTPUT, size: 1, address: 0 },
+  },
+});
+
+NodeRegister.registerGate({
+  showConnectorLabel: true,
+  showLabel: true,
+  nodeName: "XOR",
+  type: NodeType.NODE,
+  colSpan: 3,
+  rowSpan: 3,
+  connectors: {
+    A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
+    B: { direction: LEFT, idx: 2, type: INPUT, size: 1, address: 1 },
+    C: { direction: RIGHT, idx: 1, type: OUTPUT, size: 1, address: 0 },
+  },
+});
+
+NodeRegister.registerGate({
+  showConnectorLabel: true,
+  showLabel: true,
   nodeName: "AND",
   type: NodeType.NODE,
   colSpan: 3,

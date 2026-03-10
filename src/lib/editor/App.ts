@@ -14,11 +14,11 @@ import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
 
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
-import { Wire, AndNode, NodeEntity, SwitchNode } from "./entities";
+import { Wire, NodeEntity } from "./entities";
 import { NodeRegister } from "./NodeRegister";
 import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
 import { Simulator } from "./simlulator/Simulator";
-
+import { ClipboardManager } from "./Clipboard";
 interface Providers {
   componentCatalog: { name: string; src: string }[];
 }
@@ -44,6 +44,7 @@ export interface AppContext {
   camera: Camera;
   tools: ToolManager;
   simulator: Simulator;
+  clipboard: ClipboardManager;
 }
 
 export type AppProviders = Providers & DefaultProvider;
@@ -61,6 +62,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
   camera!: Camera;
   tools!: ToolManager;
   simualtor!: Simulator;
+  clipboard!: ClipboardManager;
 
   g!: Graphics;
   protected background: number = 0xf6f8fb;
@@ -79,19 +81,11 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.tools.register(new EditWireTool());
     this.tools.register(new AddNodeTool());
 
-    /*     const node = new SwitchNode();
-    this.world.addChild(node);
-    const node1 = new AndNode();
-    node1.position.x += 400;
-    this.world.addChild(node1); */
-
     this.g = new Graphics();
     this.g.beginPath();
     this.g.circle(0, 0, 15);
     this.g.fill(0xff0000);
     this.g.zIndex = 10;
-
-    //this.world.addChild(this.g);
   }
 
   protected onCreate(): void {
@@ -99,6 +93,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.camera = new Camera(this.grid, this.world);
     this.tools = new ToolManager();
     this.simualtor = new Simulator(this.world);
+    this.clipboard = new ClipboardManager(this.world);
   }
 
   protected async onInitTextures(): Promise<void> {
@@ -155,6 +150,23 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       if (id != "copy") {
         this.context.tools.restore();
       }
+    });
+
+    this.events.on(
+      "context_copy",
+      (data: {
+        selection: (Wire | NodeEntity)[];
+        position: { x: number; y: number };
+      }) => {
+        this.clipboard.copy(
+          data.selection.map((item) => item.toJson()),
+          data.position,
+        );
+      },
+    );
+
+    this.events.on("context_pase", (position) => {
+      this.clipboard.pase(position);
     });
 
     this.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
@@ -216,6 +228,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       camera: this.camera,
       tools: this.tools,
       simulator: this.simualtor,
+      clipboard: this.clipboard,
     };
   }
 

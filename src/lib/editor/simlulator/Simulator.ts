@@ -89,6 +89,24 @@ export class Simulator {
           this.memory.setBit(operation.outputs[0], 0, (a | b) & 1);
         }
       }
+      if (operation.type == "NOR") {
+        if (operation.inputs.length == 2) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          const b = this.memory.getBit(operation.inputs[1], 0);
+          this.memory.setBit(operation.outputs[0], 0, ~(a | b) & 1);
+        }
+      }
+      if (operation.type == "XOR") {
+        if (operation.inputs.length == 2) {
+          const a = this.memory.getBit(operation.inputs[0], 0);
+          const b = this.memory.getBit(operation.inputs[1], 0);
+          this.memory.setBit(
+            operation.outputs[0],
+            0,
+            ((~a & b) | (a & ~b)) & 1,
+          );
+        }
+      }
       if (operation.type == "NOT") {
         if (operation.inputs.length == 1) {
           const a = this.memory.getBit(operation.inputs[0], 0);

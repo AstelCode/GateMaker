@@ -140,4 +140,8 @@ export class Entity<
   protected onMouseLeave?(e: EngineMouseEvent): boolean | void;
 
   //#endregion
+
+  public toJson() {
+    return {};
+  }
 }
