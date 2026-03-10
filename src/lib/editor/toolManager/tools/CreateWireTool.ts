@@ -6,6 +6,7 @@ import {
   type EngineMouseEvent,
   type Entity,
 } from "../../core";
+import { InputNode, OutputNode } from "../../entities";
 import { ConnectorType, NodeEntity } from "../../entities/NodeEntity";
 import { Wire } from "../../entities/Wire";
 import type { Tool } from "../ToolManager";
@@ -39,11 +40,52 @@ export class CreateWireTool implements Tool {
     const nodeConector = wire.startNode.node.getConnectorInfo(
       wire.startNode.pin,
     );
-    return (
-      nodeConector?.type != connectorType &&
-      node.isValidConnector(name) &&
-      size == wire.size
-    );
+
+    if (nodeConector?.type == connectorType || !node.isValidConnector(name)) {
+      return false;
+    }
+
+    if (
+      node instanceof InputNode &&
+      node.getConnectorSize() == -1 &&
+      !(wire.startNode.node instanceof InputNode)
+    ) {
+      node.setConnectorSize(nodeConector.size);
+      wire.size = nodeConector.size;
+      return true;
+    }
+    if (
+      wire.startNode.node instanceof InputNode &&
+      wire.startNode.node.getConnectorSize() == -1 &&
+      !(node instanceof InputNode)
+    ) {
+      wire.startNode.node.setConnectorSize(size);
+      wire.size = size;
+      return true;
+    }
+
+    if (
+      node instanceof OutputNode &&
+      node.getConnectorSize() == -1 &&
+      !(wire.startNode.node instanceof OutputNode)
+    ) {
+      node.setConnectorSize(nodeConector.size);
+      wire.size = nodeConector.size;
+      return true;
+    }
+    if (
+      wire.startNode.node instanceof OutputNode &&
+      wire.startNode.node.getConnectorSize() == -1 &&
+      !(node instanceof OutputNode)
+    ) {
+      wire.startNode.node.setConnectorSize(size);
+      wire.size = size;
+      return true;
+    }
+    if (size != wire.size) {
+      return false;
+    }
+    return true;
   }
 
   onDown(e: EngineMouseEvent, hit?: AppEntity): void {

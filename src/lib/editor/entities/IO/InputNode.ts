@@ -9,8 +9,8 @@ import { createText, type TextureGenerator } from "../../core";
 import { NodeRegister } from "../../NodeRegister";
 import { Graphics, Text } from "pixi.js";
 
-const { LEFT } = ConnectorDirection;
-const { INPUT } = ConnectorType;
+const { RIGHT } = ConnectorDirection;
+const { OUTPUT } = ConnectorType;
 
 export class InputNode extends NodeEntity {
   static name: string = "INPUT";
@@ -22,7 +22,7 @@ export class InputNode extends NodeEntity {
     colSpan: 3,
     rowSpan: 1,
     connectors: {
-      A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
+      A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1, address: 0 },
     },
   };
 
@@ -42,7 +42,17 @@ export class InputNode extends NodeEntity {
   constructor() {
     super();
     this.name = "INPUT";
-    this.config = InputNode.config;
+    this.config = {
+      showConnectorLabel: false,
+      showLabel: false,
+      nodeName: "INPUT",
+      type: NodeType.INPUT,
+      colSpan: 3,
+      rowSpan: 1,
+      connectors: {
+        A: { direction: RIGHT, idx: 0, type: OUTPUT, size: -1, address: 0 },
+      },
+    };
     this.design = InputNode.design;
     this.graphis = new Graphics();
     this.graphis.zIndex = 5;
@@ -64,6 +74,14 @@ export class InputNode extends NodeEntity {
 
   public getName() {
     return this.text.text;
+  }
+
+  public setConnectorSize(size: number) {
+    this.config.connectors["A"].size = size;
+  }
+
+  public getConnectorSize() {
+    return this.config.connectors["A"].size;
   }
 
   drawText() {

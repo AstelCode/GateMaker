@@ -8,8 +8,8 @@ import {
   NodeType,
   type NodeConfig,
 } from "../NodeEntity";
-const { RIGHT } = ConnectorDirection;
-const { OUTPUT } = ConnectorType;
+const { LEFT } = ConnectorDirection;
+const { INPUT } = ConnectorType;
 
 export class OutputNode extends NodeEntity {
   static name: string = "OUTPUT";
@@ -21,7 +21,7 @@ export class OutputNode extends NodeEntity {
     colSpan: 3,
     rowSpan: 1,
     connectors: {
-      A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1, address: 0 },
+      A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
     },
   };
 
@@ -42,7 +42,17 @@ export class OutputNode extends NodeEntity {
   constructor() {
     super();
     this.name = "OUTPUT";
-    this.config = OutputNode.config;
+    this.config = {
+      showConnectorLabel: false,
+      showLabel: false,
+      nodeName: "OUTPUT",
+      type: NodeType.OUTPUT,
+      colSpan: 3,
+      rowSpan: 1,
+      connectors: {
+        A: { direction: LEFT, idx: 0, type: INPUT, size: -1, address: 0 },
+      },
+    };
     this.design = OutputNode.design;
     this.graphis = new Graphics();
     this.graphis.zIndex = 5;
@@ -64,7 +74,12 @@ export class OutputNode extends NodeEntity {
   public getName() {
     return this.text.text;
   }
-
+  public setConnectorSize(size: number) {
+    this.config.connectors["A"].size = size;
+  }
+  public getConnectorSize() {
+    return this.config.connectors["A"].size;
+  }
   public drawText() {
     this.graphis.clear();
     this.graphis.rect(-60, -20, 90, 30);
