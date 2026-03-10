@@ -1,14 +1,12 @@
 import type { AppEngineContext, AppEntity } from "../../App";
+import { MouseButton, Vector, type EngineMouseEvent } from "../../core";
 import {
-  MouseButton,
-  Vector,
-  type EngineContext,
-  type EngineMouseEvent,
-  type Entity,
-} from "../../core";
-import { InputNode, OutputNode } from "../../entities";
-import { ConnectorType, NodeEntity } from "../../entities/NodeEntity";
-import { Wire } from "../../entities/Wire";
+  Wire,
+  ConnectorType,
+  NodeEntity,
+  InputNode,
+  OutputNode,
+} from "../../entities";
 import type { Tool } from "../ToolManager";
 
 export class CreateWireTool implements Tool {

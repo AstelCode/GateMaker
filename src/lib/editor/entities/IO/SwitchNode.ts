@@ -1,6 +1,6 @@
 import { Graphics } from "pixi.js";
 import { BoxCollider, type TextureGenerator } from "../../core";
-import { NodeRegister } from "../../NodeRegister";
+import { NodeRegister } from "../NodeRegister";
 import {
   ConnectorDirection,
   ConnectorType,

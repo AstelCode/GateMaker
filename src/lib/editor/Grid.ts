@@ -1,16 +1,13 @@
 import { Container, Graphics, Rectangle, TilingSprite } from "pixi.js";
 import {
-  Entity,
   Vector,
   type EngineContext,
-  type TextureData,
   type TextureGenerator,
   type VectorData,
 } from "./core";
 import type { AppContext, AppEvents, AppProviders } from "./App";
 import { fastFloor, hashPos } from "./utils";
-import type { NodeEntity } from "./entities/NodeEntity";
-import type { Wire } from "./entities/Wire";
+import { type NodeEntity, type Wire } from "./entities";
 
 function createTexture(): TextureGenerator[] {
   const generator: TextureGenerator = () => {

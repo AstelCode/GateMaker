@@ -5,7 +5,7 @@ import {
   type EngineMouseEvent,
   type TextureGenerator,
 } from "../../core";
-import { NodeRegister } from "../../NodeRegister";
+import { NodeRegister } from "../NodeRegister";
 import {
   ConnectorDirection,
   ConnectorType,

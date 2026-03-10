@@ -1,4 +1,4 @@
-import { NodeRegister } from "../../NodeRegister";
+import { NodeRegister } from "../NodeRegister";
 import { ConnectorDirection, ConnectorType, NodeType } from "../NodeEntity";
 const { LEFT, RIGHT, TOP, BOTTOM } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
@@ -169,5 +169,68 @@ NodeRegister.registerGate({
     "1": { direction: LEFT, idx: 1, type: INPUT, size: 1, address: 1 },
     "2": { direction: LEFT, idx: 2, type: INPUT, size: 1, address: 2 },
     "3": { direction: LEFT, idx: 3, type: INPUT, size: 1, address: 3 },
+  },
+});
+
+NodeRegister.registerGate({
+  showConnectorLabel: true,
+  showLabel: true,
+  type: 2,
+  colSpan: 3,
+  rowSpan: 1,
+  nodeName: "aux",
+  connectors: {
+    A: { direction: 2, type: 1, size: 1, idx: 0, address: 0 },
+    Input: {
+      direction: 1,
+      type: 0,
+      size: 4,
+      idx: 0,
+      address: 0,
+    },
+  },
+  internalGates: {
+    memSize: 8,
+    externalInputs: [7],
+    externalOutputs: [2],
+    internalGates: [
+      { type: "OR", outputs: [2], inputs: [0, 1] },
+      { type: "AND", outputs: [1], inputs: [3, 4] },
+      { type: "AND", outputs: [0], inputs: [5, 6] },
+      { type: "Spli4", outputs: [5, 6, 3, 4], inputs: [7] },
+    ],
+  },
+});
+
+NodeRegister.registerGate({
+  showConnectorLabel: true,
+  showLabel: true,
+  type: 2,
+  colSpan: 4,
+  rowSpan: 4,
+  nodeName: "Memory",
+  connectors: {
+    Q4: { direction: 2, type: 1, size: 4, idx: 0, address: 0 },
+    D4: { direction: 1, type: 0, size: 4, idx: 0, address: 0 },
+    Clock: {
+      direction: 1,
+      type: 0,
+      size: 1,
+      idx: 1,
+      address: 1,
+    },
+  },
+  internalGates: {
+    memSize: 11,
+    externalInputs: [0, 10],
+    externalOutputs: [9],
+    internalGates: [
+      { type: "Spli4", outputs: [1, 2, 3, 4], inputs: [0] },
+      { type: "Conb4", outputs: [9], inputs: [5, 6, 7, 8] },
+      { type: "FLIP_FLOP_D", outputs: [8], inputs: [4, 10] },
+      { type: "FLIP_FLOP_D", outputs: [7], inputs: [3, 10] },
+      { type: "FLIP_FLOP_D", outputs: [6], inputs: [2, 10] },
+      { type: "FLIP_FLOP_D", outputs: [5], inputs: [1, 10] },
+    ],
   },
 });

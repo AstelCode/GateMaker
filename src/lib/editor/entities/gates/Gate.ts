@@ -1,12 +1,16 @@
-import { Vector } from "../../core";
-import { NodeRegister } from "../../NodeRegister";
+import { Entity } from "../../core";
 import type { Memory } from "../../simlulator/Memory";
+import { InputNode, OutputNode, NodeRegister } from "../index";
 import {
+  ConnectorDirection,
   ConnectorType,
   createNodeTexture,
   NodeEntity,
+  NodeType,
+  type Connector,
   type NodeConfig,
 } from "../NodeEntity";
+import { Wire } from "../Wire";
 
 export interface InternalGates {
   memSize: number;
@@ -65,6 +69,7 @@ export class Gate extends NodeEntity {
           this.outputsAddress[name] = outputs[connector.address];
         }
       }
+      console.log(this.config, this.info.operations, this.outputsAddress);
     } else {
       super.createOutputsId();
     }
@@ -174,5 +179,105 @@ export class Gate extends NodeEntity {
         inputs: this.inputsMap.map((item) => this.inputsAddress[item] ?? -1),
       },
     ];
+  }
+
+  private getGateInfo() {
+    return [
+      {
+        type: this.name,
+        outputs: this.outputsMap.map((item) => this.outputsAddress[item] ?? -1),
+        inputs: this.inputsMap.map((item) => this.inputsAddress[item] ?? -1),
+      },
+    ];
+  }
+
+  static combineGates(nodes: Entity[], name: string) {
+    const operations: Operation[] = [];
+    let inputs: (Connector & { name: string })[] = [];
+    let outputs: (Connector & { name: string })[] = [];
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (nodes instanceof Wire) continue;
+      if (node instanceof Gate) {
+        operations.push(...node.getGateInfo());
+      }
+      if (node instanceof InputNode) {
+        inputs.push({
+          name: node.getText(),
+          direction: ConnectorDirection.LEFT,
+          type: ConnectorType.INPUT,
+          size: node.getConnectorSize(),
+          idx: node.position.y,
+          address: node.outputsAddress["A"],
+        });
+      }
+      if (node instanceof OutputNode) {
+        outputs.push({
+          name: node.getText(),
+          direction: ConnectorDirection.RIGHT,
+          type: ConnectorType.OUTPUT,
+          size: node.getConnectorSize(),
+          idx: node.position.y,
+          address: node.inputsAddress["A"],
+        });
+      }
+    }
+
+    inputs = inputs
+      .sort((a, b) => a.idx - b.idx)
+      .map((item, i) => ({ ...item, idx: i }));
+
+    outputs = outputs
+      .sort((a, b) => a.idx - b.idx)
+      .map((item, i) => ({ ...item, idx: i }));
+
+    const map = new Map<number, number>();
+    let count = 0;
+    for (let i = 0; i < operations.length; i++) {
+      operations[i].inputs = operations[i].inputs.map((item) => {
+        if (!map.has(item)) {
+          map.set(item, count);
+          return count++;
+        } else {
+          return map.get(item)!;
+        }
+      });
+      operations[i].outputs = operations[i].outputs.map((item) => {
+        if (!map.has(item)) {
+          map.set(item, count);
+          return count++;
+        } else {
+          return map.get(item)!;
+        }
+      });
+    }
+
+    const externalInputs = inputs.map((item) => map.get(item.address)!);
+    const externalOutputs = outputs.map((item) => map.get(item.address)!);
+    const connectors: Record<string, Connector> = {};
+    outputs.forEach((item, i) => {
+      connectors[item.name] = { ...item, address: i };
+    });
+    inputs.forEach((item, i) => {
+      connectors[item.name] = { ...item, address: i };
+    });
+
+    const config: NodeConfig & { internalGates?: InternalGates } = {
+      showConnectorLabel: true,
+      showLabel: true,
+      type: NodeType.NODE,
+      nodeName: name,
+      colSpan: 3,
+      rowSpan: Math.max(outputs.length, inputs.length),
+      connectors,
+      internalGates: {
+        memSize: count,
+        externalInputs,
+        externalOutputs,
+        internalGates: operations,
+      },
+    };
+    console.dir(JSON.stringify(config));
   }
 }

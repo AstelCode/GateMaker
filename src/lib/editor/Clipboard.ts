@@ -1,7 +1,16 @@
 import type { AppEntity } from "./App";
 import { Vector, type World } from "./core";
-import { NodeEntity, Wire, type NodeJson, type WireJson } from "./entities";
-import { NodeRegister } from "./NodeRegister";
+import {
+  NodeRegister,
+  InputNode,
+  NodeEntity,
+  OutputNode,
+  Wire,
+  type InputJson,
+  type NodeJson,
+  type OutputJson,
+  type WireJson,
+} from "./entities";
 
 export class ClipboardManager {
   current?: (NodeJson | WireJson)[];
@@ -33,6 +42,9 @@ export class ClipboardManager {
           this.world.addChild(node);
           node.position.set(item.position.x, item.position.y);
           mem.set(item.id, node);
+          if (node instanceof InputNode || node instanceof OutputNode) {
+            node.setConnectorSize((item as InputJson | OutputJson).size);
+          }
           items.push(node);
         }
         if (item.type == "wire") {
@@ -63,6 +75,7 @@ export class ClipboardManager {
       wire.endWire(endNode, wireJson.endPin, endPos, endInfo.direction, false);
       wire.points.length = 0;
       wire.setPath(wireJson.path.map((item) => item.clone()));
+      wire.size = wireJson.size;
       wire.forceLayoutUpdate();
       items.push(wire);
     }

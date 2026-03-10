@@ -1,16 +1,20 @@
 import { Graphics, Text } from "pixi.js";
 import { createText, type TextureGenerator } from "../../core";
-import { NodeRegister } from "../../NodeRegister";
+/* import { NodeRegister } from "../../NodeRegister"; */
 import {
   ConnectorDirection,
   ConnectorType,
   NodeEntity,
   NodeType,
   type NodeConfig,
+  type NodeJson,
 } from "../NodeEntity";
+import { NodeRegister } from "../NodeRegister";
 const { LEFT } = ConnectorDirection;
 const { INPUT } = ConnectorType;
-
+export interface OutputJson extends NodeJson {
+  size: number;
+}
 export class OutputNode extends NodeEntity {
   static name: string = "OUTPUT";
   static config: NodeConfig = {
@@ -71,7 +75,7 @@ export class OutputNode extends NodeEntity {
   public rename(text: string) {
     this.text.text = text;
   }
-  public getName() {
+  public getText() {
     return this.text.text;
   }
   public setConnectorSize(size: number) {
@@ -84,6 +88,12 @@ export class OutputNode extends NodeEntity {
     this.graphis.clear();
     this.graphis.rect(-60, -20, 90, 30);
     this.graphis.fill({ color: 0xdddddd });
+  }
+  public toJson(): OutputJson {
+    return {
+      ...super.toJson(),
+      size: this.getConnectorSize(),
+    };
   }
 }
 

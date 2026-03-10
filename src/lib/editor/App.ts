@@ -12,11 +12,17 @@ import { ToolManager } from "./toolManager/ToolManager";
 import { SelectionTool } from "./toolManager/tools/SelectionTool";
 import { CreateWireTool } from "./toolManager/tools/CreateWireTool";
 import { EditWireTool } from "./toolManager/tools/EditWireTool";
-import { Wire, NodeEntity, InputNode, OutputNode } from "./entities";
-import { NodeRegister } from "./NodeRegister";
 import { AddNodeTool } from "./toolManager/tools/AddNodeToo";
 import { Simulator } from "./simlulator/Simulator";
 import { ClipboardManager } from "./Clipboard";
+import {
+  Wire,
+  NodeEntity,
+  InputNode,
+  OutputNode,
+  Gate,
+  NodeRegister,
+} from "./entities";
 
 interface Providers {
   componentCatalog: { name: string; src: string }[];
@@ -104,6 +110,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
   }
 
   protected iniEvents() {
+    //#region mouse
     this.mouse.on(MouseEventType.DOWN, (e) => {
       const hit = this.world.getHit();
       if (this.world.hasInteraction()) {
@@ -153,6 +160,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
         this.context.tools.restore();
       }
     });
+    //#endregion
 
     this.events.on(
       "context_copy",
@@ -188,6 +196,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       this.events.emit("openComponentCatalog");
     });
 
+    //#region componentSelected
     this.events.on("onComponentSelected", (data) => {
       this.tools.restore();
       this.tools.use("add-node");
@@ -207,6 +216,9 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       }));
     });
 
+    //#endregion
+
+    //#region simulation controls
     this.events.on("startSimulation", () => {
       (this.tools.getTool("selection") as SelectionTool).unSelect();
       this.tools.restore();
@@ -216,15 +228,22 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     this.events.on("stopSimulation", () => {
       this.context.simulator.stop();
     });
+    //#endregion
+
+    //#region Rename
     let renameHit: InputNode | OutputNode;
     this.events.on("context_rename", (hit) => {
       renameHit = hit.selection[0] as InputNode | OutputNode;
-      this.events.emit("openRename", renameHit.getName());
+      this.events.emit("openRename", renameHit.getText());
     });
-
     this.events.on("getNewName", (name) => {
       if (!renameHit) return;
       renameHit.rename(name);
+    });
+    //#endregion
+
+    this.events.on("context_combine", (selection) => {
+      Gate.combineGates(selection);
     });
   }
 

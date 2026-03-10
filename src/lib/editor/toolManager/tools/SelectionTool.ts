@@ -7,11 +7,14 @@ import {
 } from "../../core";
 import type { Tool } from "../ToolManager";
 import type { AppEntity, AppEngineContext } from "../../App";
-import { NodeEntity } from "../../entities/NodeEntity";
-import { SelectionBox } from "../../entities/SelectionBox";
-import { Wire } from "../../entities/Wire";
 import type { Container } from "pixi.js";
-import { InputNode, OutputNode } from "../../entities";
+import {
+  InputNode,
+  OutputNode,
+  Wire,
+  NodeEntity,
+  SelectionBox,
+} from "../../entities";
 
 export class SelectionTool implements Tool {
   priority: number = 0;
@@ -62,6 +65,7 @@ export class SelectionTool implements Tool {
   }
 
   reset(): void {
+    this.selection.forEach((item) => item.unSelect());
     this.box.clear();
     this.active = false;
     this.selection.length = 0;
@@ -141,6 +145,17 @@ export class SelectionTool implements Tool {
 
     if (hit instanceof SelectionBox) {
       if (this.selection.find((item) => item instanceof NodeEntity)) {
+        if (
+          this.selection.length > 2 &&
+          this.selection.some((n) => n instanceof InputNode) &&
+          this.selection.some((n) => n instanceof OutputNode)
+        ) {
+          options.push({
+            id: "combine",
+            name: "Combine",
+            data: this.selection.slice(),
+          });
+        }
         options.push({
           id: "copy",
           name: "Copy",

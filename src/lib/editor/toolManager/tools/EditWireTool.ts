@@ -1,11 +1,5 @@
 import type { AppEntity, AppEngineContext } from "../../App";
-import {
-  MouseButton,
-  Vector,
-  type EngineContext,
-  type EngineMouseEvent,
-  type Entity,
-} from "../../core";
+import { MouseButton, Vector, type EngineMouseEvent } from "../../core";
 import { Wire } from "../../entities/Wire";
 import type { Tool } from "../ToolManager";
 

@@ -1,4 +1,3 @@
-/* eslint-disable no-debugger */
 import type { Vector } from "./core";
 import type { Wire } from "./entities/Wire";
 import { Grid } from "./Grid";

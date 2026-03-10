@@ -1,5 +1,5 @@
-import type { AppEngineContext, AppEntity } from "../../App";
-import { MouseButton, type EngineMouseEvent, type Entity } from "../../core";
+import type { AppEngineContext } from "../../App";
+import { MouseButton, type EngineMouseEvent } from "../../core";
 import { NodeEntity } from "../../entities";
 import type { Tool } from "../ToolManager";
 

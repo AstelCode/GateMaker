@@ -4,14 +4,17 @@ import {
   NodeEntity,
   NodeType,
   type NodeConfig,
+  type NodeJson,
 } from "../NodeEntity";
 import { createText, type TextureGenerator } from "../../core";
-import { NodeRegister } from "../../NodeRegister";
 import { Graphics, Text } from "pixi.js";
-
+import { NodeRegister } from "../NodeRegister";
 const { RIGHT } = ConnectorDirection;
 const { OUTPUT } = ConnectorType;
 
+export interface InputJson extends NodeJson {
+  size: number;
+}
 export class InputNode extends NodeEntity {
   static name: string = "INPUT";
   static config: NodeConfig = {
@@ -72,7 +75,7 @@ export class InputNode extends NodeEntity {
     this.text.text = text;
   }
 
-  public getName() {
+  public getText() {
     return this.text.text;
   }
 
@@ -88,6 +91,12 @@ export class InputNode extends NodeEntity {
     this.graphis.clear();
     this.graphis.rect(-60, -20, 90, 30);
     this.graphis.fill({ color: 0xdddddd });
+  }
+  public toJson(): InputJson {
+    return {
+      ...super.toJson(),
+      size: this.getConnectorSize(),
+    };
   }
 }
 

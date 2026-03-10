@@ -1,5 +1,5 @@
-import { Gate, type InternalGates } from "./entities/gates/Gate";
-import type { NodeConfig, NodeEntity } from "./entities/NodeEntity";
+import { Gate, type InternalGates } from "./gates/Gate";
+import type { NodeConfig, NodeEntity } from "./NodeEntity";
 
 export class NodeRegister {
   private constructor() {}

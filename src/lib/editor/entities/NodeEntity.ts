@@ -10,6 +10,7 @@ import {
 import { Grid } from "../Grid";
 import type { AppContext, AppEvents, AppProviders } from "../App";
 import type { Wire } from "./Wire";
+import type { Operation } from "./gates/Gate";
 
 export enum ConnectorDirection {
   LEFT = 1 << 0,
@@ -263,6 +264,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
       connectorHeight: ch,
     } = this.design;
     const cs = Grid.cellSize;
+    if (!this.position) return undefined;
 
     const center = new Vector(this.position.x, this.position.y);
     const delta = p.clone().subtract(center);
@@ -524,6 +526,9 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   } {
     return { type: 0, output: [], input: [] };
   } */
+  getOperations(): Operation[] {
+    return [];
+  }
 
   public toJson(): NodeJson {
     return {

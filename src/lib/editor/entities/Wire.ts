@@ -30,6 +30,7 @@ export interface WireJson {
   endId: string;
   endPin: string;
   path: Vector[];
+  size: number;
 }
 
 export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
@@ -468,6 +469,7 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       endId: this.endNode.node.id,
       endPin: this.endNode.pin,
       path: this.path.map((item) => item.clone()),
+      size: this.size,
     };
   }
 }

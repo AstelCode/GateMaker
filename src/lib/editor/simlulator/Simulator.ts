@@ -1,7 +1,6 @@
 import type { Container } from "pixi.js";
-import { NodeEntity, NodeType } from "../entities";
+import { NodeEntity, NodeType, Gate, type Operation } from "../entities";
 import { Memory } from "./Memory";
-import { Gate, type Operation } from "../entities/gates/Gate";
 
 export class Simulator {
   public memory: Memory;
@@ -13,15 +12,15 @@ export class Simulator {
     this.operations = [];
   }
 
-  createGrapth() {
-    const memory = new Map<string, { node: NodeEntity; idx: number }>();
-    const pathMemory = new Map<string, NodeEntity>();
-    const list: NodeEntity[] = [];
-
-    const startedNodes = this.world.children.filter(
+  static createOperations(nodes: NodeEntity[]) {
+    nodes = nodes.filter(
       (item) =>
         item instanceof NodeEntity && item.config.type == NodeType.INPUT,
     ) as NodeEntity[];
+
+    const memory = new Map<string, { node: NodeEntity; idx: number }>();
+    const pathMemory = new Map<string, NodeEntity>();
+    const list: NodeEntity[] = [];
 
     const traveler = (node: NodeEntity) => {
       pathMemory.clear();
@@ -46,26 +45,22 @@ export class Simulator {
       }
     };
 
-    startedNodes.forEach((node) => traveler(node));
+    nodes.forEach((node) => traveler(node));
 
-    this.operations = Array.from(memory.values())
-      .filter(
-        (item) =>
-          item.node.config.type != NodeType.INPUT &&
-          item.node.config.type != NodeType.OUTPUT &&
-          item.node instanceof Gate,
-      )
+    return Array.from(memory.values())
       .sort((a, b) => a.idx - b.idx)
       .map((item) => (item.node as Gate).getOperations())
       .flat();
   }
 
   exectute() {
+    // eslint-disable-next-line no-debugger
+    debugger;
     for (const operation of this.operations) {
       if (operation.type == "SET") {
         for (let i = 0; i < operation.inputs.length; i++) {
-          const a = this.memory.getBit(operation.inputs[i], 0);
-          this.memory.setBit(operation.outputs[i], 0, a & 1);
+          const a = this.memory.get(operation.inputs[i]);
+          this.memory.set(operation.outputs[i], a);
         }
       }
       if (operation.type == "AND") {
@@ -134,8 +129,10 @@ export class Simulator {
 
   start() {
     this.started = true;
-    this.createGrapth();
+    const nodes = this.world.children as NodeEntity[];
+    this.operations = Simulator.createOperations(nodes);
   }
+
   loop() {
     if (!this.started) return;
     this.exectute();
