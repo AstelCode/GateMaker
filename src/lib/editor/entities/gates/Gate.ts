@@ -1,5 +1,6 @@
-import { Entity } from "../../core";
+import type { AppEntity } from "../../App";
 import type { Memory } from "../../simlulator/Memory";
+import { Simulator } from "../../simlulator/Simulator";
 import { InputNode, OutputNode, NodeRegister } from "../index";
 import {
   ConnectorDirection,
@@ -10,7 +11,6 @@ import {
   type Connector,
   type NodeConfig,
 } from "../NodeEntity";
-import { Wire } from "../Wire";
 
 export interface InternalGates {
   memSize: number;
@@ -29,6 +29,11 @@ export interface Operation {
   outputs: number[];
 }
 
+export interface GateConfig extends NodeConfig {
+  internalGates?: InternalGates;
+  design?: Record<string, any>;
+}
+
 export class Gate extends NodeEntity {
   static createTexture(config: NodeConfig) {
     return createNodeTexture(config.nodeName, config, this.design);
@@ -36,10 +41,10 @@ export class Gate extends NodeEntity {
 
   inputsMap: string[];
   outputsMap: string[];
-  config: NodeConfig & { internalGates?: InternalGates };
+  config: GateConfig;
   info: { operations: Operation[]; internalInputs: number[] };
 
-  constructor(config: NodeConfig & { internalGates?: InternalGates }) {
+  constructor(config: GateConfig) {
     super();
     this.info = { operations: [], internalInputs: [] };
     this.config = config;
@@ -77,62 +82,58 @@ export class Gate extends NodeEntity {
 
   private static traveler(
     gate: InternalGates,
-    idx: number,
     externalInputs: number[] = [],
     externalOutputs: number[] = [],
-    memory: { usedMemory: Set<number>; maxAddress: number },
+    context: { usedMemory: Set<number>; maxAddress: number; idx: number },
   ) {
     const operations: Operation[] = [];
-    let aux = gate.memSize;
+    const startIdx = context.idx;
+    context.idx += gate.memSize;
     for (let i = 0; i < gate.internalGates.length; i++) {
-      const { type, inputs, outputs } = gate.internalGates[i];
+      // eslint-disable-next-line prefer-const
+      let { type, inputs, outputs } = gate.internalGates[i];
       const config = NodeRegister.getConfig(type);
       if (!config) throw new Error("Gate don't exits");
+      inputs = inputs.map((i) => {
+        const extInpIdx = gate.externalInputs.indexOf(i);
+        const extOutIdx = gate.externalOutputs.indexOf(i);
+        const id =
+          externalInputs[extInpIdx] ??
+          externalOutputs[extOutIdx] ??
+          i + startIdx;
+        if (context.maxAddress < id) context.maxAddress = id;
+        context.usedMemory.add(id);
+        return id;
+      });
+      outputs = outputs.map((i) => {
+        const extInpIdx = gate.externalInputs.indexOf(i);
+        const extOutIdx = gate.externalOutputs.indexOf(i);
+        const address =
+          externalInputs[extInpIdx] ??
+          externalOutputs[extOutIdx] ??
+          i + startIdx;
+        if (context.maxAddress < address) context.maxAddress = address;
+        context.usedMemory.add(address);
+        return address;
+      });
       if (config.internalGates) {
         operations.push(
-          ...this.traveler(
-            config.internalGates,
-            idx + aux,
-            inputs,
-            outputs,
-            memory,
-          ),
+          ...this.traveler(config.internalGates, inputs, outputs, context),
         );
-        aux += config.internalGates.memSize;
       } else {
-        operations.push({
-          type,
-          inputs: inputs.map((i) => {
-            const extInpIdx = gate.externalInputs.indexOf(i);
-            const extOutIdx = gate.externalOutputs.indexOf(i);
-            const id =
-              externalInputs[extInpIdx] ??
-              externalOutputs[extOutIdx] ??
-              i + idx;
-            if (memory.maxAddress < id) memory.maxAddress = id;
-            memory.usedMemory.add(id);
-            return id;
-          }),
-          outputs: outputs.map((i) => {
-            const extInpIdx = gate.externalInputs.indexOf(i);
-            const extOutIdx = gate.externalOutputs.indexOf(i);
-            const address =
-              externalInputs[extInpIdx] ??
-              externalOutputs[extOutIdx] ??
-              i + idx;
-            if (memory.maxAddress < address) memory.maxAddress = address;
-            memory.usedMemory.add(address);
-            return address;
-          }),
-        });
+        operations.push({ type, inputs, outputs });
       }
     }
     return operations;
   }
 
   private static registerGetGates(gateInfo: InternalGates, memory: Memory) {
-    const info = { usedMemory: new Set<number>(), maxAddress: -Infinity };
-    const operations = this.traveler(gateInfo, 0, [], [], info);
+    const info = {
+      usedMemory: new Set<number>(),
+      maxAddress: -Infinity,
+      idx: 0,
+    };
+    const operations = this.traveler(gateInfo, [], [], info);
 
     let diff = 0;
     const memId = new Map<number, number>();
@@ -181,7 +182,7 @@ export class Gate extends NodeEntity {
     ];
   }
 
-  private getGateInfo() {
+  public getGateInfo() {
     return [
       {
         type: this.name,
@@ -191,17 +192,19 @@ export class Gate extends NodeEntity {
     ];
   }
 
-  static combineGates(nodes: Entity[], name: string) {
+  static combineGates(nodes: AppEntity[], name: string) {
     const operations: Operation[] = [];
+    const design: Record<string, any>[] = [];
     let inputs: (Connector & { name: string })[] = [];
     let outputs: (Connector & { name: string })[] = [];
 
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      if (nodes instanceof Wire) continue;
-      if (node instanceof Gate) {
-        operations.push(...node.getGateInfo());
-      }
+    for (const node of nodes) {
+      design.push(node.toJson());
+    }
+
+    const grapth = Simulator.createGrapth(nodes);
+
+    for (const { node } of grapth) {
       if (node instanceof InputNode) {
         inputs.push({
           name: node.getText(),
@@ -211,6 +214,7 @@ export class Gate extends NodeEntity {
           idx: node.position.y,
           address: node.outputsAddress["A"],
         });
+        continue;
       }
       if (node instanceof OutputNode) {
         outputs.push({
@@ -221,6 +225,10 @@ export class Gate extends NodeEntity {
           idx: node.position.y,
           address: node.inputsAddress["A"],
         });
+        continue;
+      }
+      if (node instanceof Gate) {
+        operations.push(...node.getGateInfo());
       }
     }
 
@@ -257,13 +265,17 @@ export class Gate extends NodeEntity {
     const externalOutputs = outputs.map((item) => map.get(item.address)!);
     const connectors: Record<string, Connector> = {};
     outputs.forEach((item, i) => {
+      if (connectors[item.name] != undefined)
+        throw new Error("Exists connectors with the same name");
       connectors[item.name] = { ...item, address: i };
     });
     inputs.forEach((item, i) => {
+      if (connectors[item.name] != undefined)
+        throw new Error("Exists connectors with the same name");
       connectors[item.name] = { ...item, address: i };
     });
 
-    const config: NodeConfig & { internalGates?: InternalGates } = {
+    const config: GateConfig = {
       showConnectorLabel: true,
       showLabel: true,
       type: NodeType.NODE,
@@ -277,7 +289,8 @@ export class Gate extends NodeEntity {
         externalOutputs,
         internalGates: operations,
       },
+      design,
     };
-    console.dir(JSON.stringify(config));
+    return config;
   }
 }

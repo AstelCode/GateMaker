@@ -4,7 +4,10 @@ import { useEditor } from "./useEditor";
 export const RenameControl = () => {
   const app = useEditor();
   const [isOpen, setIsOpen] = useState(false);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<{ text: string; data: any }>({
+    text: "",
+    data: null,
+  });
 
   const onSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,11 +21,18 @@ export const RenameControl = () => {
 
   useEffect(() => {
     if (!app) return;
-    app.engine.getEvents().on("openRename", (name) => {
+    app.engine.getEvents().on("openRename", (data) => {
       setIsOpen(true);
-      setValue(name);
+      setValue(data);
     });
   }, [app]);
+
+  const onChange = (text: string) => {
+    setValue({
+      ...value,
+      text: text,
+    });
+  };
 
   return (
     <div
@@ -42,8 +52,8 @@ export const RenameControl = () => {
           <form onSubmit={onSubmit}>
             <input
               className="w-75 h-13 rounded-xl border-2 border-neutral-600 text-center text-2xl"
-              onChange={(e) => setValue(e.target.value)}
-              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              value={value.text}
             />
           </form>
         </div>

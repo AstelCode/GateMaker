@@ -148,4 +148,5 @@ export class Entity<
   public toJson() {
     return {};
   }
+  public setFromJson(data: any) {}
 }

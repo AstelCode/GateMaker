@@ -1,11 +1,12 @@
-import { Gate, type InternalGates } from "./gates/Gate";
+import type { AssetManager } from "../core";
+import { Gate, type GateConfig, type InternalGates } from "./gates/Gate";
 import type { NodeConfig, NodeEntity } from "./NodeEntity";
 
 export class NodeRegister {
   private constructor() {}
   static nodesRecord: Map<string, typeof NodeEntity> = new Map();
   static nodes: (typeof NodeEntity)[] = [];
-  static gates: (NodeConfig & { internalGates?: InternalGates })[] = [];
+  static gates: GateConfig[] = [];
   static gatesRecord: Map<
     string,
     NodeConfig & { internalGates?: InternalGates }
@@ -16,9 +17,15 @@ export class NodeRegister {
     this.nodes.push(node);
   }
 
-  static registerGate(config: NodeConfig & { internalGates?: InternalGates }) {
+  static registerGate(config: GateConfig) {
     this.gatesRecord.set(config.nodeName, config);
     this.gates.push(config);
+  }
+
+  static async registerCustomGate(assets: AssetManager, config: GateConfig) {
+    this.gatesRecord.set(config.nodeName, config);
+    this.gates.push(config);
+    await assets.createTexture(Gate.createTexture(config));
   }
 
   static getConfig(name: string) {

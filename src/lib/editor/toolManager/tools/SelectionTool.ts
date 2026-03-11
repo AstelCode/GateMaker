@@ -108,11 +108,11 @@ export class SelectionTool implements Tool {
     return selection;
   }
 
-  updateContextMenu(hit: Container | undefined, p: Vector) {
+  async updateContextMenu(hit: Container | undefined, p: Vector) {
     const options: { id: string; name: string; data: any; color?: string }[] =
       [];
     if (!hit) {
-      if (this.context.clipboard.hasData()) {
+      if (await this.context.clipboard.hasData()) {
         options.push({ id: "pase", name: "Pase", data: { x: p.x, y: p.y } });
       }
       options.push({ id: "add", name: "Add", data: { x: p.x, y: p.y } });
@@ -145,6 +145,20 @@ export class SelectionTool implements Tool {
 
     if (hit instanceof SelectionBox) {
       if (this.selection.find((item) => item instanceof NodeEntity)) {
+        if (
+          this.selection.length == 1 &&
+          (this.selection[0] instanceof InputNode ||
+            this.selection[0] instanceof OutputNode)
+        ) {
+          options.push({
+            id: "rename",
+            name: "Rename",
+            data: {
+              selection: [this.selection[0]],
+              position: { x: p.x, y: p.y },
+            },
+          });
+        }
         if (
           this.selection.length > 2 &&
           this.selection.some((n) => n instanceof InputNode) &&
@@ -184,7 +198,27 @@ export class SelectionTool implements Tool {
     this.context.events.emit("setContextMenu", options);
   }
 
-  onDown(e: EngineMouseEvent, hit?: AppEntity): void {
+  async doubleClickActions(hit: Container | undefined, p: Vector) {
+    /*   const options: { id: string; name: string; data: any; color?: string }[] =
+      []; */
+    if (hit instanceof SelectionBox) {
+      if (
+        this.selection.length == 1 &&
+        (this.selection[0] instanceof InputNode ||
+          this.selection[0] instanceof OutputNode)
+      ) {
+        const hit = this.selection[0];
+        this.context.events.emit("openRename", {
+          text: hit.getText(),
+          data: hit,
+        });
+      }
+    }
+  }
+  private lastClick = 0;
+  private DOUBLE_CLICK_DELAY = 300; // ms
+  async onDown(e: EngineMouseEvent, hit?: AppEntity): Promise<void> {
+    const now = Date.now();
     const v = new Vector(e.wX, e.wY);
     if (e.button == MouseButton.RIGHT) {
       this.context.events.emit("openContextMenu", { x: e.vX, y: e.vY });
@@ -194,8 +228,18 @@ export class SelectionTool implements Tool {
 
     if (this.active && this.box.bounding.pointInside(v) && !this.isWire) {
       if (e.button == MouseButton.RIGHT) {
-        this.updateContextMenu(this.box, new Vector(e.wX, e.wY));
+        await this.updateContextMenu(this.box, new Vector(e.wX, e.wY));
       }
+
+      if (e.button == MouseButton.LEFT) {
+        if (now - this.lastClick < this.DOUBLE_CLICK_DELAY) {
+          this.doubleClickActions(this.box, new Vector(e.wX, e.wY));
+          this.lastClick = 0;
+        } else {
+          this.lastClick = now;
+        }
+      }
+
       this.draggingSelection = true;
       this.lastMouse.set(v);
       this.cacheSelection();
@@ -223,6 +267,14 @@ export class SelectionTool implements Tool {
       }
       hit.selected = true;
       this.updateContextMenu(hit, new Vector(e.wX, e.wY));
+      if (e.button == MouseButton.LEFT) {
+        if (now - this.lastClick < this.DOUBLE_CLICK_DELAY) {
+          this.doubleClickActions(this.box, new Vector(e.wX, e.wY));
+          this.lastClick = 0;
+        } else {
+          this.lastClick = now;
+        }
+      }
       this.selection.length = 0;
       this.selection.push(hit);
       this.box.calcBounding([hit]);
@@ -253,6 +305,14 @@ export class SelectionTool implements Tool {
     }
 
     this.updateContextMenu(undefined, new Vector(e.wX, e.wY));
+    if (e.button == MouseButton.LEFT) {
+      if (now - this.lastClick < this.DOUBLE_CLICK_DELAY) {
+        this.doubleClickActions(this.box, new Vector(e.wX, e.wY));
+        this.lastClick = 0;
+      } else {
+        this.lastClick = now;
+      }
+    }
     this.active = false;
     this.draggingSelection = false;
     this.isWire = false;

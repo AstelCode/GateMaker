@@ -1,6 +1,8 @@
 import type { Container } from "pixi.js";
 import { NodeEntity, NodeType, Gate, type Operation } from "../entities";
 import { Memory } from "./Memory";
+import type { Entity } from "../core";
+import type { AppEntity } from "../App";
 
 export class Simulator {
   public memory: Memory;
@@ -12,8 +14,8 @@ export class Simulator {
     this.operations = [];
   }
 
-  static createOperations(nodes: NodeEntity[]) {
-    nodes = nodes.filter(
+  static createGrapth(entities: AppEntity[]) {
+    const nodes = entities.filter(
       (item) =>
         item instanceof NodeEntity && item.config.type == NodeType.INPUT,
     ) as NodeEntity[];
@@ -28,17 +30,18 @@ export class Simulator {
       list.push(node);
       let currentIdx = 0;
       while (list.length > 0) {
-        const item = list.pop();
+        const item = list.shift();
         if (!item) continue;
-        if (pathMemory.has(item.id)) continue;
         if (memory.has(item.id)) {
           const idx = memory.get(item.id)?.idx;
-          if (idx && currentIdx < idx) {
+          if (idx && currentIdx > idx) {
             memory.set(item.id, { node: item, idx: currentIdx });
           }
         } else {
+          if (pathMemory.has(item.id)) continue;
           memory.set(item.id, { node: item, idx: currentIdx });
         }
+        if (pathMemory.has(item.id)) continue;
         currentIdx++;
         pathMemory.set(item.id, item);
         item.getNextNodes().forEach((item) => list.push(item));
@@ -47,8 +50,11 @@ export class Simulator {
 
     nodes.forEach((node) => traveler(node));
 
-    return Array.from(memory.values())
-      .sort((a, b) => a.idx - b.idx)
+    return Array.from(memory.values()).sort((a, b) => a.idx - b.idx);
+  }
+
+  static createOperations(nodes: NodeEntity[]) {
+    return this.createGrapth(nodes)
       .map((item) => (item.node as Gate).getOperations())
       .flat();
   }

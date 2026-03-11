@@ -22,6 +22,7 @@ import {
   OutputNode,
   Gate,
   NodeRegister,
+  type GateConfig,
 } from "./entities";
 
 interface Providers {
@@ -37,12 +38,20 @@ interface Events {
 
   onComponentSelected: { name: string };
   openComponentCatalog: any;
+  setComponentCatalag: { name: string; src: string }[];
 
   startSimulation: any;
   stopSimulation: any;
 
-  openRename: string;
-  getNewName: string;
+  openRename: { text: string; data: InputNode | OutputNode };
+  getNewName: { data: InputNode | OutputNode; text: string };
+
+  errorMessage: string;
+  successMessage: string;
+
+  openCreateGate: { config: GateConfig; selection: NodeEntity[] };
+
+  onCreateGate: { config: GateConfig; selection: NodeEntity[] };
 
   [T: `context_${string}`]: any;
 }
@@ -164,19 +173,19 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
 
     this.events.on(
       "context_copy",
-      (data: {
+      async (data: {
         selection: (Wire | NodeEntity)[];
         position: { x: number; y: number };
       }) => {
-        this.clipboard.copy(
+        await this.clipboard.copy(
           data.selection.map((item) => item.toJson()),
           data.position,
         );
       },
     );
 
-    this.events.on("context_pase", (position) => {
-      this.clipboard.pase(position);
+    this.events.on("context_pase", async (position) => {
+      await this.clipboard.pase(position);
     });
 
     this.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
@@ -231,19 +240,39 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     //#endregion
 
     //#region Rename
-    let renameHit: InputNode | OutputNode;
-    this.events.on("context_rename", (hit) => {
-      renameHit = hit.selection[0] as InputNode | OutputNode;
-      this.events.emit("openRename", renameHit.getText());
+    this.events.on("context_rename", (data) => {
+      //renameHit = hit.selection[0] as InputNode | OutputNode;
+      this.events.emit("openRename", {
+        text: data.selection[0].getText(),
+        data: data.selection[0],
+      });
     });
-    this.events.on("getNewName", (name) => {
-      if (!renameHit) return;
-      renameHit.rename(name);
+    this.events.on("getNewName", ({ text, data }) => {
+      data.rename(text);
     });
     //#endregion
 
-    this.events.on("context_combine", (selection) => {
-      Gate.combineGates(selection);
+    this.events.on("context_combine", (selection: NodeEntity[]) => {
+      try {
+        const config = Gate.combineGates(selection, "new");
+        this.events.emit("openCreateGate", { config, selection });
+      } catch (e) {
+        if (e instanceof Error) {
+          this.events.emit("errorMessage", e.message);
+        }
+      }
+    });
+
+    this.events.on("onCreateGate", async ({ config, selection }) => {
+      selection.forEach((item) => item.delete());
+      await NodeRegister.registerCustomGate(this.assets, config);
+      this.events.emit(
+        "setComponentCatalag",
+        NodeRegister.getNames().map((name) => ({
+          name,
+          src: this.assets.get(name).src,
+        })),
+      );
     });
   }
 

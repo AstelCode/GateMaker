@@ -6,11 +6,12 @@ export const ComponentsCatalog = () => {
   const app = useEditor();
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [items, setItems] = useState<{ name: string; src: string }[]>([]);
 
-  const items = useMemo(() => {
+  /*     const items = useMemo(() => {
     return app?.engine.getProviders().get("componentCatalog") || [];
   }, [app]);
-
+ */
   const filteredItems = useMemo(() => {
     if (!searchTerm) return items;
 
@@ -34,6 +35,11 @@ export const ComponentsCatalog = () => {
     app?.engine.getEvents().on("openComponentCatalog", () => {
       setIsOpen(true);
     });
+    app?.engine.getEvents().on("setComponentCatalag", (data) => {
+      setItems(data);
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(app?.engine.getProviders().get("componentCatalog") || []);
   }, [app]);
 
   const onClick = (name: string) => {

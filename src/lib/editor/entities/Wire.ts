@@ -472,4 +472,10 @@ export class Wire extends Entity<AppProviders, AppEvents, AppContext> {
       size: this.size,
     };
   }
+
+  public setFromJson(data: WireJson): void {
+    this.points.length = 0;
+    this.setPath(data.path.map((item) => new Vector(item)));
+    this.size = data.size;
+  }
 }

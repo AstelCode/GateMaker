@@ -14,6 +14,7 @@ const { OUTPUT } = ConnectorType;
 
 export interface InputJson extends NodeJson {
   size: number;
+  labelName: string;
 }
 export class InputNode extends NodeEntity {
   static name: string = "INPUT";
@@ -96,7 +97,12 @@ export class InputNode extends NodeEntity {
     return {
       ...super.toJson(),
       size: this.getConnectorSize(),
+      labelName: this.text.text,
     };
+  }
+  public setFromJson(data: InputJson): void {
+    this.setConnectorSize(data.size);
+    this.text.text = data.labelName;
   }
 }
 

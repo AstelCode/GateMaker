@@ -376,6 +376,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   public getNextNodes() {
     const connectors = this.config.connectors;
     const nodes: NodeEntity[] = [];
+    const memory = new Set<string>();
     for (const name in connectors) {
       const { type } = connectors[name];
       if (
@@ -385,9 +386,15 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
       ) {
         this.wires[name].forEach((item) => {
           if (item.wire.startNode.node == this) {
-            nodes.push(item.wire.endNode.node);
+            if (!memory.has(item.wire.endNode.node.id)) {
+              nodes.push(item.wire.endNode.node);
+              memory.add(item.wire.endNode.node.id);
+            }
           } else {
-            nodes.push(item.wire.startNode.node);
+            if (!memory.has(item.wire.startNode.node.id)) {
+              nodes.push(item.wire.startNode.node);
+              memory.add(item.wire.startNode.node.id);
+            }
           }
         });
       }
