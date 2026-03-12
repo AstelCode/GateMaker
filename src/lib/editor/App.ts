@@ -253,9 +253,12 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
         });
       },
     );
-    this.events.on("getNewName", ({ text, data }) => {
-      data.rename(text);
-    });
+    this.events.on(
+      "getNewName",
+      ({ text, data }: { text: string; data: InputNode | OutputNode }) => {
+        data.rename(text);
+      },
+    );
     //#endregion
 
     this.events.on("context_combine", (selection: NodeEntity[]) => {

@@ -7,6 +7,7 @@ import {
   type Connector,
   type GateConfig,
 } from "../../lib/editor/entities";
+import type { Entity } from "../../lib/editor/core";
 
 type Direction = "top" | "bottom" | "left" | "right";
 
@@ -101,22 +102,27 @@ export const CreateGateControl = () => {
   useEffect(() => {
     if (!app) return;
 
-    app.engine.getEvents().on("openCreateGate", (data) => {
-      setPins(
-        Object.entries(data.config.connectors).map(
-          ([key, item]: [string, Connector]) => ({
-            key,
-            name: key,
-            idx: item.idx,
-            direction: toDirectionString(item.direction),
-            type: item.type == ConnectorType.INPUT ? "input" : "output",
-          }),
-        ),
+    app.engine
+      .getEvents()
+      .on(
+        "openCreateGate",
+        (data: { config: GateConfig; selection: NodeEntity[] }) => {
+          setPins(
+            Object.entries(data.config.connectors).map(
+              ([key, item]: [string, Connector]) => ({
+                key,
+                name: key,
+                idx: item.idx,
+                direction: toDirectionString(item.direction),
+                type: item.type == ConnectorType.INPUT ? "input" : "output",
+              }),
+            ),
+          );
+          setNodeName(data.config.nodeName);
+          setData(data);
+          setIsOpen(true);
+        },
       );
-      setNodeName(data.config.nodeName);
-      setData(data);
-      setIsOpen(true);
-    });
   }, [app]);
 
   useEffect(() => {
