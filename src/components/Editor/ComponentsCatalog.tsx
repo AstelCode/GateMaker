@@ -37,9 +37,11 @@ export const ComponentsCatalog = () => {
       setIsOpen(true);
       inputRef.current?.focus();
     });
-    app?.engine.getEvents().on("setComponentCatalag", (data) => {
-      setItems(data);
-    });
+    app?.engine
+      .getEvents()
+      .on("setComponentCatalag", (data: { src: string; name: string }[]) => {
+        setItems(data);
+      });
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(app?.engine.getProviders().get("componentCatalog") || []);
   }, [app]);

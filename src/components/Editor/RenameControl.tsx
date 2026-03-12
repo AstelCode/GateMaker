@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useEditor } from "./useEditor";
+import type { NodeEntity } from "../../lib/editor/entities";
 
 export const RenameControl = () => {
   const app = useEditor();
@@ -21,10 +22,12 @@ export const RenameControl = () => {
 
   useEffect(() => {
     if (!app) return;
-    app.engine.getEvents().on("openRename", (data) => {
-      setIsOpen(true);
-      setValue(data);
-    });
+    app.engine
+      .getEvents()
+      .on("openRename", (data: { text: string; data: NodeEntity }) => {
+        setIsOpen(true);
+        setValue(data);
+      });
   }, [app]);
 
   const onChange = (text: string) => {

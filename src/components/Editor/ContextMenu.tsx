@@ -12,20 +12,29 @@ export const ContextMenu = () => {
 
   useEffect(() => {
     if (!app) return;
-    app.engine.getEvents().on("setContextMenu", (options) => {
-      setContextMenu((prev) => ({
-        ...prev,
-        options,
-      }));
-    });
+    app.engine
+      .getEvents()
+      .on(
+        "setContextMenu",
+        (
+          options: { name: string; id: string; data: any; color?: string }[],
+        ) => {
+          setContextMenu((prev) => ({
+            ...prev,
+            options,
+          }));
+        },
+      );
 
-    app.engine.getEvents().on("openContextMenu", (position) => {
-      setContextMenu((prev) => ({
-        ...prev,
-        position,
-        isOpen: true,
-      }));
-    });
+    app.engine
+      .getEvents()
+      .on("openContextMenu", (position: { x: number; y: number }) => {
+        setContextMenu((prev) => ({
+          ...prev,
+          position,
+          isOpen: true,
+        }));
+      });
 
     app.engine.getEvents().on("closeModal", () => {
       setContextMenu((prev) => ({

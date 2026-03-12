@@ -164,7 +164,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       this.tools.onOutside(e);
     });
 
-    this.events.on("contextOptionSelected", (id) => {
+    this.events.on("contextOptionSelected", (id: string) => {
       if (id != "copy") {
         this.context.tools.restore();
       }
@@ -184,9 +184,12 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       },
     );
 
-    this.events.on("context_pase", async (position) => {
-      await this.clipboard.pase(position);
-    });
+    this.events.on(
+      "context_pase",
+      async (position: { x: number; y: number }) => {
+        await this.clipboard.pase(position);
+      },
+    );
 
     this.events.on("context_delete", (data: (Wire | NodeEntity)[]) => {
       data.forEach((data) => data.delete());
@@ -206,7 +209,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     });
 
     //#region componentSelected
-    this.events.on("onComponentSelected", (data) => {
+    this.events.on("onComponentSelected", (data: { name: string }) => {
       this.tools.restore();
       this.tools.use("add-node");
       const tool = this.tools.getTool("add-node") as AddNodeTool;
@@ -240,13 +243,16 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     //#endregion
 
     //#region Rename
-    this.events.on("context_rename", (data) => {
-      //renameHit = hit.selection[0] as InputNode | OutputNode;
-      this.events.emit("openRename", {
-        text: data.selection[0].getText(),
-        data: data.selection[0],
-      });
-    });
+    this.events.on(
+      "context_rename",
+      (data: { selection: (InputNode | OutputNode)[] }) => {
+        //renameHit = hit.selection[0] as InputNode | OutputNode;
+        this.events.emit("openRename", {
+          text: data.selection[0].getText(),
+          data: data.selection[0],
+        });
+      },
+    );
     this.events.on("getNewName", ({ text, data }) => {
       data.rename(text);
     });
@@ -263,14 +269,23 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       }
     });
 
-    this.events.on("onCreateGate", async ({ config, selection }) => {
-      selection.forEach((item) => item.delete());
-      await NodeRegister.registerCustomGate(this.assets, config);
-      this.events.emit(
-        "setComponentCatalag",
-        NodeRegister.getCatalog(this.assets),
-      );
-    });
+    this.events.on(
+      "onCreateGate",
+      async ({
+        config,
+        selection,
+      }: {
+        config: GateConfig;
+        selection: (Wire | NodeEntity)[];
+      }) => {
+        selection.forEach((item) => item.delete());
+        await NodeRegister.registerCustomGate(this.assets, config);
+        this.events.emit(
+          "setComponentCatalag",
+          NodeRegister.getCatalog(this.assets),
+        );
+      },
+    );
   }
 
   protected onUpdate(): void {

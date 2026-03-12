@@ -27,10 +27,10 @@ export const Editor = () => {
         return;
       }
 
-      info.engine.getEvents().on("errorMessage", (message) => {
+      info.engine.getEvents().on("errorMessage", (message: string) => {
         toast.error(message, { duration: 2000 });
       });
-      info.engine.getEvents().on("successMessage", (message) => {
+      info.engine.getEvents().on("successMessage", (message: string) => {
         toast.success(message, { duration: 2000 });
       });
 

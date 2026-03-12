@@ -4,6 +4,7 @@ import {
   ConnectorDirection,
   ConnectorType,
   NodeEntity,
+  type Connector,
   type GateConfig,
 } from "../../lib/editor/entities";
 
@@ -102,13 +103,15 @@ export const CreateGateControl = () => {
 
     app.engine.getEvents().on("openCreateGate", (data) => {
       setPins(
-        Object.entries(data.config.connectors).map(([key, item]) => ({
-          key,
-          name: key,
-          idx: item.idx,
-          direction: toDirectionString(item.direction),
-          type: item.type == ConnectorType.INPUT ? "input" : "output",
-        })),
+        Object.entries(data.config.connectors).map(
+          ([key, item]: [string, Connector]) => ({
+            key,
+            name: key,
+            idx: item.idx,
+            direction: toDirectionString(item.direction),
+            type: item.type == ConnectorType.INPUT ? "input" : "output",
+          }),
+        ),
       );
       setNodeName(data.config.nodeName);
       setData(data);
