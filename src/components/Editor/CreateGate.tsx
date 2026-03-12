@@ -67,16 +67,16 @@ export const CreateGateControl = () => {
         updated.idx = clamp(updated.idx, 0, max);
       }
 
-      if (field === "idx") {
+      /*       if (field === "idx") {
         updated.idx = clamp(value, 0, max);
       }
-
-      const conflict = copy.some(
+ */
+      /*       const conflict = copy.some(
         (p, j) =>
           j !== i && p.direction === updated.direction && p.idx === updated.idx,
       );
 
-      if (conflict) return prev;
+      if (conflict) return prev; */
 
       copy[i] = updated;
 
@@ -135,7 +135,7 @@ export const CreateGateControl = () => {
     pins.forEach((item) => {
       const connector = gateInfo.connectors[item.key];
       delete gateInfo.connectors[item.key];
-      delete (connector as any).name;
+      delete (connector as any)[item.name];
       connector.direction = toDirectionNumber(item.direction);
       connector.idx = item.idx;
       gateInfo.connectors[item.name] = connector;
@@ -237,7 +237,7 @@ export const CreateGateControl = () => {
                     type="number"
                     className="border rounded w-14 text-center bg-white"
                     min={0}
-                    max={getMaxIdx(pin.direction)}
+                    /* max={getMaxIdx(pin.direction)} */
                     value={pin.idx}
                     onChange={(e) =>
                       updatePin(i, "idx", Number(e.target.value))

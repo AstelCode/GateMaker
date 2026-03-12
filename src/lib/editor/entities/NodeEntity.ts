@@ -497,6 +497,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
   }
 
   protected onMouseHover(e: EngineMouseEvent): boolean | void {
+    console.log(this);
     this.context.mouse.cursor = "pointer";
   }
 

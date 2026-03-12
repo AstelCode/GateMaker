@@ -1,7 +1,7 @@
 import type { AppEntity } from "../../App";
 import type { Memory } from "../../simlulator/Memory";
 import { Simulator } from "../../simlulator/Simulator";
-import { InputNode, OutputNode, NodeRegister } from "../index";
+import { InputNode, OutputNode, NodeRegister, Wire } from "../index";
 import {
   ConnectorDirection,
   ConnectorType,
@@ -62,12 +62,17 @@ export class Gate extends NodeEntity {
       .map((item) => item[0]);
   }
 
+  private address!: number;
+  private memSize!: number;
   protected createOutputsId(): void {
     if (this.config.internalGates) {
-      const { operations, inputs, outputs } = Gate.registerGetGates(
-        this.config.internalGates,
-        this.context.simulator.memory,
-      );
+      const { operations, inputs, outputs, address, size } =
+        Gate.registerGetGates(
+          this.config.internalGates,
+          this.context.simulator.memory,
+        );
+      this.address = address;
+      this.memSize = size;
       this.info = { operations, internalInputs: inputs };
       for (const name in this.config.connectors) {
         const connector = this.config.connectors[name];
@@ -143,22 +148,25 @@ export class Gate extends NodeEntity {
       }
       memId.set(i, i - diff);
     }
+
     const size = info.usedMemory.size;
-    const adress = memory.register(size);
+    const address = memory.register(size);
 
     for (let i = 0; i < operations.length; i++) {
       operations[i].inputs = operations[i].inputs.map(
-        (item) => memId.get(item)! + adress,
+        (item) => memId.get(item)! + address,
       );
       operations[i].outputs = operations[i].outputs.map(
-        (item) => memId.get(item)! + adress,
+        (item) => memId.get(item)! + address,
       );
     }
 
     return {
+      address,
       operations,
-      outputs: gateInfo.externalOutputs.map((item) => item + adress),
-      inputs: gateInfo.externalInputs.map((item) => item + adress),
+      size,
+      outputs: gateInfo.externalOutputs.map((item) => item + address),
+      inputs: gateInfo.externalInputs.map((item) => item + address),
     };
   }
 
@@ -190,6 +198,17 @@ export class Gate extends NodeEntity {
         inputs: this.inputsMap.map((item) => this.inputsAddress[item] ?? -1),
       },
     ];
+  }
+
+  public deleteWire(pin: string, wire: Wire): void {
+    super.deleteWire(pin, wire);
+    /*     if (this.inputsAddress[pin]) delete this.inputsAddress[pin];
+    if (this.outputsAddress[pin]) delete this.outputsAddress[pin]; */
+  }
+
+  public delete() {
+    super.delete();
+    this.context.simulator.memory.delete(this.address, this.memSize);
   }
 
   static combineGates(nodes: AppEntity[], name: string) {

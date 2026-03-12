@@ -308,13 +308,14 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       .forEach((child) => {
         child.destroy();
       });
-
+    this.simualtor.memory.clear();
     NodeRegister.load(data.customGates);
     await this.assets.createTexture(NodeRegister.getCustomGatesTexture());
     this.events.emit(
       "setComponentCatalag",
       NodeRegister.getCatalog(this.assets),
     );
+
     ClipboardManager.createNodes(data.scene, this.world, 0, 0);
   }
 

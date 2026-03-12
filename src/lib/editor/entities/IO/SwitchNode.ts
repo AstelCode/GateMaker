@@ -90,8 +90,11 @@ export class SwitchNode extends NodeEntity {
     if (!this.context.simulator.started) return;
     this.active = !this.active;
     if (this.active) {
+      // this.context.simulator.setInput(this.outputsAddress["A"], 1);
       this.context.simulator.memory.set(this.outputsAddress["A"], 1);
     } else {
+      //this.context.simulator.setInput(this.outputsAddress["A"], 0);
+
       this.context.simulator.memory.set(this.outputsAddress["A"], 0);
     }
     this.drawControl();

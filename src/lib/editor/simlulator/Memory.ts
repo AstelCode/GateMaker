@@ -19,7 +19,7 @@ export class Memory {
         throw new Error("Memory overflow");
       }
       const id = this.currentId;
-      this.currentId += size;
+      this.currentId += size + 1;
       return id;
     }
     const id = this.freeMemory.pop() ?? this.currentId++;
@@ -28,9 +28,12 @@ export class Memory {
     }
     return id;
   }
-  delete(id: number) {
-    this.freeMemory.push(id);
-    this.memory[id] = 0;
+
+  delete(id: number, size: number = 1) {
+    for (let i = id; i < id + size; i++) {
+      this.freeMemory.push(i);
+      this.memory[i] = 0;
+    }
   }
 
   set(id: number, value: number) {
