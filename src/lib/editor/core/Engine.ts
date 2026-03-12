@@ -4,7 +4,7 @@ import { AssetManager, type TextureData } from "./AssetManager/AssetManager";
 import { World } from "./World";
 import { Provider } from "./Providers/Provider";
 import Stats from "stats.js";
-import { EventEmitter } from "./eventEmiter/EventEmitter";
+import { EventEmitter } from "./EventEmiter/EventEmitter";
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DefaultProvider {}
 

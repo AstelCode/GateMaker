@@ -2,7 +2,7 @@ export * from "./AABB/AABB";
 export * from "./AssetManager/AssetManager";
 export * from "./Engine";
 export * from "./Entity";
-export * from "./eventEmiter/EventEmitter";
+export * from "./EventEmiter/EventEmitter";
 export * from "./Providers/Provider";
 export * from "./World";
 export * from "./colliders/BoxCollider";
