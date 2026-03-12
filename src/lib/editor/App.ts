@@ -268,10 +268,7 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
       await NodeRegister.registerCustomGate(this.assets, config);
       this.events.emit(
         "setComponentCatalag",
-        NodeRegister.getNames().map((name) => ({
-          name,
-          src: this.assets.get(name).src,
-        })),
+        NodeRegister.getCatalog(this.assets),
       );
     });
   }
@@ -292,9 +289,39 @@ export class App extends Engine<AppProviders, AppEvents, AppContext> {
     };
   }
 
+  public toJson() {
+    const scene = this.world.children
+      .filter((item) => item instanceof NodeEntity || item instanceof Wire)
+      .map((item) => item.toJson());
+
+    const customGates = NodeRegister.toJson();
+
+    return {
+      scene,
+      customGates,
+    };
+  }
+
+  public async load(data: Record<string, any>) {
+    this.world.children
+      .filter((item) => item instanceof Wire || item instanceof NodeEntity)
+      .forEach((child) => {
+        child.destroy();
+      });
+
+    NodeRegister.load(data.customGates);
+    await this.assets.createTexture(NodeRegister.getCustomGatesTexture());
+    this.events.emit(
+      "setComponentCatalag",
+      NodeRegister.getCatalog(this.assets),
+    );
+    ClipboardManager.createNodes(data.scene, this.world, 0, 0);
+  }
+
   public getEvents() {
     return this.events;
   }
+
   public getProviders() {
     return this.providers;
   }

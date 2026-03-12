@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { BsGrid1X2Fill } from "react-icons/bs";
 import { useEditor } from "./useEditor";
 
@@ -7,6 +7,7 @@ export const ComponentsCatalog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [items, setItems] = useState<{ name: string; src: string }[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   /*     const items = useMemo(() => {
     return app?.engine.getProviders().get("componentCatalog") || [];
@@ -34,6 +35,7 @@ export const ComponentsCatalog = () => {
     });
     app?.engine.getEvents().on("openComponentCatalog", () => {
       setIsOpen(true);
+      inputRef.current?.focus();
     });
     app?.engine.getEvents().on("setComponentCatalag", (data) => {
       setItems(data);
@@ -46,6 +48,11 @@ export const ComponentsCatalog = () => {
     setIsOpen(false);
     app?.engine.getEvents().emit("onComponentSelected", { name });
   };
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   return (
     <>
@@ -57,7 +64,7 @@ export const ComponentsCatalog = () => {
       </div>
       <div
         onContextMenu={(e) => e.preventDefault()}
-        className="absolute right-2.5 top-20 border border-gray-700 w-80 h-[calc(100vh-120px)] rounded-[10px] bg-white"
+        className="absolute right-2.5 top-20 border border-gray-700  h-[calc(100vh-120px)] rounded-[10px] bg-white"
         style={{ display: isOpen ? "block" : "none" }}
       >
         <div className="w-full grid place-content-center h-20">
@@ -65,11 +72,12 @@ export const ComponentsCatalog = () => {
             className="border border-gray-700 rounded-lg w-64 h-10 outline-none px-4 text-center text-lg"
             placeholder="buscar"
             value={searchTerm}
+            ref={inputRef}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="w-full h-[calc(100%-80px)] verflow-y-scroll overflow-x-hidden">
-          <div className="px-5 min-w-80 w-80 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]   content-start gap-10 h-[calc(100%-80px)]">
+          <div className="px-5 min-w-80 w-120 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))]   content-start gap-10 h-[calc(100%-80px)]">
             {filteredItems.map((item) => (
               <div
                 className="cursor-pointer w-30 h-33 rounded-[10px] flex flex-col items-center justify-between hover:bg-stone-100 hover:border duration-75 py-1"

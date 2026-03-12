@@ -7,6 +7,7 @@ import { SimulationControls } from "./SimulationControls";
 import { RenameControl } from "./RenameControl";
 import toast, { Toaster } from "react-hot-toast";
 import { CreateGateControl } from "./CreateGate";
+import { FileControl } from "./FileControls";
 
 export const Editor = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -44,7 +45,8 @@ export const Editor = () => {
 
   return (
     <EditorContext.Provider value={app}>
-      <div className="w-screen h-screen" ref={ref}>
+      <div className="w-screen h-screen relative" ref={ref}>
+        <FileControl />
         <CreateGateControl />
         <Toaster />
         <ContextMenu />

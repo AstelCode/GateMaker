@@ -130,6 +130,8 @@ export const CreateGateControl = () => {
     if (!data) return;
     const gateInfo = { ...data.config };
     gateInfo.nodeName = nodeName;
+    gateInfo.colSpan = cols;
+    gateInfo.rowSpan = rows;
     pins.forEach((item) => {
       const connector = gateInfo.connectors[item.key];
       delete gateInfo.connectors[item.key];

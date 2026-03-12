@@ -32,6 +32,7 @@ export interface Operation {
 export interface GateConfig extends NodeConfig {
   internalGates?: InternalGates;
   design?: Record<string, any>;
+  custom?: boolean;
 }
 
 export class Gate extends NodeEntity {
@@ -74,7 +75,6 @@ export class Gate extends NodeEntity {
           this.outputsAddress[name] = outputs[connector.address];
         }
       }
-      console.log(this.config, this.info.operations, this.outputsAddress);
     } else {
       super.createOutputsId();
     }
@@ -283,6 +283,7 @@ export class Gate extends NodeEntity {
       colSpan: 3,
       rowSpan: Math.max(outputs.length, inputs.length),
       connectors,
+      custom: true,
       internalGates: {
         memSize: count,
         externalInputs,
