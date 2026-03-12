@@ -24,10 +24,13 @@ export class SwitchNode extends NodeEntity {
       A: { direction: RIGHT, idx: 0, type: OUTPUT, size: 1, address: 0 },
     },
   };
-  static design: NodeDesign = {
-    ...NodeEntity.design,
-    tolerance: 0,
-  };
+
+  static get design(): NodeDesign {
+    return {
+      ...NodeEntity.design,
+      tolerance: 0,
+    };
+  }
 
   graphis: Graphics;
   active: boolean = false;

@@ -24,10 +24,12 @@ export class LedNode extends NodeEntity {
       A: { direction: LEFT, idx: 0, type: INPUT, size: 1, address: 0 },
     },
   };
-  static design: NodeDesign = {
-    ...NodeEntity.design,
-    tolerance: 0,
-  };
+  static get design(): NodeDesign {
+    return {
+      ...NodeEntity.design,
+      tolerance: 0,
+    };
+  }
   static loadTextures(): TextureGenerator[] {
     const func = super.loadTextures()[0];
 

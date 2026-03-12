@@ -7,8 +7,8 @@ import {
   type EngineMouseEvent,
   type TextureGenerator,
 } from "../core";
-import { Grid } from "../Grid";
 import type { AppContext, AppEvents, AppProviders } from "../App";
+import { Grid } from "../Grid";
 import type { Wire } from "./Wire";
 import type { Operation } from "./gates/Gate";
 
@@ -181,14 +181,16 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
 
   //#region  static methods
 
-  static readonly design: NodeDesign = {
-    connectorWidth: Grid.cellSize / 2,
-    connectorHeight: 10,
-    margin: Grid.cellSize / 4,
-    radius: 10,
-    labelOffset: 22,
-    tolerance: 20,
-  };
+  static get design(): NodeDesign {
+    return {
+      connectorWidth: Grid.cellSize / 2,
+      connectorHeight: 10,
+      margin: Grid.cellSize / 4,
+      radius: 10,
+      labelOffset: 22,
+      tolerance: 20,
+    };
+  }
 
   static config: NodeConfig;
 
