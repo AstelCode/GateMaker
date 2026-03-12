@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { Container } from "pixi.js";
 import type { DefaultEvents, DefaultProvider, EngineContext } from "./Engine";
@@ -148,5 +149,5 @@ export class Entity<
   public toJson() {
     return {};
   }
-  public setFromJson(data: any) {}
+  public setFromJson(_: any) {}
 }

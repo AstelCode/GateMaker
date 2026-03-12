@@ -1,12 +1,4 @@
-import {
-  Application,
-  Assets,
-  Container,
-  Rectangle,
-  type Renderer,
-  Texture,
-  TextureUvs,
-} from "pixi.js";
+import { Assets, Container, Rectangle, type Renderer, Texture } from "pixi.js";
 
 export interface TextureData {
   container: Container;

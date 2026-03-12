@@ -35,12 +35,6 @@ export enum MouseButton {
   RIGHT = 2,
 }
 
-type EventDataProps = {
-  global: Point;
-  buttons: number;
-  target: Container;
-};
-
 type CursorType =
   | "auto"
   | "default"

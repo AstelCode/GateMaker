@@ -16,7 +16,7 @@ export class EditWireTool implements Tool {
     return hit instanceof Wire && e.button == MouseButton.LEFT;
   }
 
-  IsUnlock(e: EngineMouseEvent, hit?: AppEntity): boolean {
+  IsUnlock(): boolean {
     return false;
   }
 
@@ -36,7 +36,7 @@ export class EditWireTool implements Tool {
     this.hit?.moveSegment(this.segmentIdx, new Vector(e.wDx, e.wDy));
   }
 
-  onUp(e: EngineMouseEvent): void {
+  onUp(): void {
     if (!this.hit) return;
     this.context.mouse.cursor = "default";
     this.hit.adjustSegment(this.segmentIdx);

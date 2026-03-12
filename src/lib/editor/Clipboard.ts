@@ -2,13 +2,9 @@ import type { AppEntity } from "./App";
 import { Vector, type World } from "./core";
 import {
   NodeRegister,
-  InputNode,
   NodeEntity,
-  OutputNode,
   Wire,
-  type InputJson,
   type NodeJson,
-  type OutputJson,
   type WireJson,
 } from "./entities";
 

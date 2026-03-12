@@ -1,6 +1,6 @@
 import { NodeRegister } from "../NodeRegister";
 import { ConnectorDirection, ConnectorType, NodeType } from "../NodeEntity";
-const { LEFT, RIGHT, TOP, BOTTOM } = ConnectorDirection;
+const { LEFT, RIGHT } = ConnectorDirection;
 const { INPUT, OUTPUT } = ConnectorType;
 
 NodeRegister.registerGate({

@@ -1,7 +1,6 @@
 import type { Container } from "pixi.js";
 import { NodeEntity, NodeType, Gate, type Operation } from "../entities";
 import { Memory } from "./Memory";
-import type { Entity } from "../core";
 import type { AppEntity } from "../App";
 
 export class Simulator {

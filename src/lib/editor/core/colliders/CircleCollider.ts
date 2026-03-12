@@ -12,7 +12,7 @@ export class CircleCollider implements Collider {
     public center: Vector,
   ) {}
 
-  getAABB(bounding?: AABB): AABB {
+  getAABB(): AABB {
     throw new Error("Method not implemented.");
   }
 

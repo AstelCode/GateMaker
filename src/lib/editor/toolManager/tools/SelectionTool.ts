@@ -198,7 +198,7 @@ export class SelectionTool implements Tool {
     this.context.events.emit("setContextMenu", options);
   }
 
-  async doubleClickActions(hit: Container | undefined, p: Vector) {
+  async doubleClickActions(hit: Container | undefined, _: Vector) {
     /*   const options: { id: string; name: string; data: any; color?: string }[] =
       []; */
     if (hit instanceof SelectionBox) {

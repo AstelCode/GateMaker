@@ -71,7 +71,7 @@ export class WireRouter {
       if (++iter > MAX_ITER) return [];
 
       const cur = open.pop()!;
-      const curKey = hashPos(cur.x, cur.y);
+      // const curKey = hashPos(cur.x, cur.y);
 
       // Si llegamos al destino, reconstruimos el camino
       if (cur.x === end.x && cur.y === end.y) {

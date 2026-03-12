@@ -496,8 +496,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.context.grid.registerEntity(this);
   }
 
-  protected onMouseHover(e: EngineMouseEvent): boolean | void {
-    console.log(this);
+  protected onMouseHover(): boolean | void {
     this.context.mouse.cursor = "pointer";
   }
 
@@ -521,7 +520,7 @@ export class NodeEntity extends Entity<AppProviders, AppEvents, AppContext> {
     this.draw();
   }
 
-  protected onMouseLeave(e: EngineMouseEvent): boolean | void {
+  protected onMouseLeave(): boolean | void {
     this.activeConnector = undefined;
     this.draw();
     this.context.mouse.cursor = "default";

@@ -24,7 +24,7 @@ export class CreateWireTool implements Tool {
     return true;
   }
 
-  IsUnlock(e: EngineMouseEvent, hit: AppEntity): boolean {
+  IsUnlock(): boolean {
     return this.completed;
   }
 

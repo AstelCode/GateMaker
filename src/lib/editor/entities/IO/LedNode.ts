@@ -1,10 +1,5 @@
 import { Graphics } from "pixi.js";
-import {
-  BoxCollider,
-  Vector,
-  type EngineMouseEvent,
-  type TextureGenerator,
-} from "../../core";
+import { BoxCollider, type TextureGenerator } from "../../core";
 import { NodeRegister } from "../NodeRegister";
 import {
   ConnectorDirection,
@@ -78,7 +73,7 @@ export class LedNode extends NodeEntity {
     this.forceLayoutUpdate();
   }
   private prevValue: number = 0;
-  public onUpdate(_delta: number): void {
+  public onUpdate(): void {
     /*     if (!this.context.simulator.started) {
       if (this.active) {
         this.active = false;
@@ -99,6 +94,6 @@ export class LedNode extends NodeEntity {
     }
   }
 
-  protected onMouseDown(e: EngineMouseEvent): boolean | void {}
+  protected onMouseDown(): boolean | void {}
 }
 NodeRegister.registerNode(LedNode);

@@ -1,7 +1,6 @@
 import { MdOutlineFolderOpen } from "react-icons/md";
 import { FiSave } from "react-icons/fi";
 import { useEditor } from "./useEditor";
-import { useState } from "react";
 let activeFile: FileSystemFileHandle | null = null;
 
 async function openProject(setData: (data: any) => void) {
