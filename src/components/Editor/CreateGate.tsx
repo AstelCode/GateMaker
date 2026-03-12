@@ -7,7 +7,6 @@ import {
   type Connector,
   type GateConfig,
 } from "../../lib/editor/entities";
-import type { Entity } from "../../lib/editor/core";
 
 type Direction = "top" | "bottom" | "left" | "right";
 

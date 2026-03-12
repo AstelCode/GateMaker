@@ -1,10 +1,10 @@
 import { Application, Container, Rectangle } from "pixi.js";
 import { MouseController } from "./controllers/MouseController";
-import { EventEmitter } from "./eventEmiter/EventEmitter";
 import { AssetManager, type TextureData } from "./AssetManager/AssetManager";
 import { World } from "./World";
 import { Provider } from "./Providers/Provider";
 import Stats from "stats.js";
+import { EventEmitter } from "./eventEmiter/EventEmitter";
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DefaultProvider {}
 
